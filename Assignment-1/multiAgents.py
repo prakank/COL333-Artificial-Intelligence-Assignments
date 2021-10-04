@@ -228,7 +228,70 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+              
+        def min_value(alpha, beta, agentIndex, depth, state): # agentIndex is required for Arbitrary number of ghosts            
+            if state.isWin() or state.isLose() or depth == self.depth:
+                return self.evaluationFunction(state)
+            
+            if agentIndex == 0: # Pacman                
+                return max_value(alpha, beta, depth+1,state)
+            min_val = None
+            
+            for move in state.getLegalActions(agentIndex):
+                temp_val = min_value(alpha, beta, (agentIndex+1)%state.getNumAgents(), depth, state.generateSuccessor(agentIndex,move))
+                
+                if min_val == None or min_val > temp_val:
+                    min_val = temp_val                
+                if min_val < alpha:
+                    return min_val                
+                
+                beta = min(beta, min_val)
+                
+            return min_val
+
+        def max_value(alpha, beta, depth, state):
+            if depth == self.depth:
+                return self.evaluationFunction(state)
+            
+            max_val = None
+            legalActions = state.getLegalActions(0)
+            
+            for move in legalActions:
+                temp_val = min_value(alpha, beta, 1, depth, state.generateSuccessor(0,move))
+                
+                if max_val == None or max_val < temp_val:
+                    max_val = temp_val
+                if max_val > beta:
+                    return max_val
+                
+                alpha = max(alpha, max_val)
+                
+            return max_val
+            
+        #     -     Layer 0
+        #   /   \
+        #  -     -  Layer 1
+        
+        # On iterating over all possible actions, we generate a min state
+        # And of all such min states, we have to choose the max one
+                     
+        alpha, beta = -float("inf"), float("inf")   
+        action = None
+        score  = None
+        legalMoves = gameState.getLegalActions(0)
+        
+        for move in legalMoves:
+            successorGameState = gameState.generateSuccessor(0,move)
+            temp_score = min_value(alpha, beta, 1,0,successorGameState)            
+            if score == None or temp_score > score:
+                score = temp_score
+                action = move
+            # if score > beta:
+            #     return action
+            alpha = max(alpha, score)
+        
+        # print("Optimal Value: {}".format(score))
+        return action
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
