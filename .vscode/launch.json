@@ -14,7 +14,8 @@
             // "args": ["-p","ReflexAgent","-l","testClassic"],
             // "args": ["--frameTime","0.05","-p","ReflexAgent","-k","1"]
             // "args": ["-p", "MinimaxAgent", "-l","minimaxClassic", "-a", "depth=4"]
-            "args": ["-q","test_alpha_beta_pruning"]
+            // "args": ["-q","test_alpha_beta_pruning"]
+            "args": ["-l","smallClassic","-p","ExpectimaxAgent","-a","evalFn=better","-n","2"]
             
         }
     ]
