@@ -11,7 +11,9 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["-p","ReflexAgent","-l","testClassic"],
+            // "args": ["-p","ReflexAgent","-l","testClassic"],
+            // "args": ["--frameTime","0.05","-p","ReflexAgent","-k","1"]
+            "args": ["-p", "MinimaxAgent", "-l","minimaxClassic", "-a", "depth=4"]
             
         }
     ]
