@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            // "args": ["-p","ReflexAgent","-l","testClassic"],
+            // "args": ["--frameTime","0.05","-p","ReflexAgent","-k","1"]
+            // "args": ["-p", "MinimaxAgent", "-l","minimaxClassic", "-a", "depth=4"]
+            // "args": ["-q","test_alpha_beta_pruning"]
+            "args": ["-l","smallClassic","-p","ExpectimaxAgent","-a","evalFn=better","-n","2"]
+            
+        }
+    ]
+}
