@@ -74,16 +74,14 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        "*** YOUR CODE HERE ***"
         
         score = successorGameState.getScore()
         Feasible_Distance = 5
         alpha_feasible = 500
         width, height = newFood.width, newFood.height
-        ghost_vicinity = False
+        ghost_vicinity = False        
         
-        
-        # Taking the account the ghost's position
+        # Taking into account the ghost's position
         for i in range(len(newGhostStates)):
             dist = manhattanDistance(newPos,newGhostStates[i].getPosition())
             if dist <= Feasible_Distance:
@@ -101,7 +99,8 @@ class ReflexAgent(Agent):
                 for j in range(height):
                     if newFood.data[i][j] == True:
                         min_dist = min(min_dist, manhattanDistance(newPos,(i,j)))
-
+            if min_dist == 0:
+                min_dist = float("inf")
             return score + 1.0/float(min_dist)
 
 def scoreEvaluationFunction(currentGameState):
@@ -400,13 +399,24 @@ def betterEvaluationFunction(currentGameState):
     # 2.) Distance to closest food
     # 3.) Distance to pellet
     # 4.) Count of food
+    
+    # We have also considered a safe distance to determine the closest active ghost parameter
+    
+    # Other than this, we have used bfs to compute closestfood cost
+    # Bfs is used so as to avoid pacman getting stuck on one side of the wall due to food on the other side
 
     pos    = currentGameState.getPacmanPosition()
     food   = currentGameState.getFood().asList()
     pellet = currentGameState.getCapsules()
+    walls  = currentGameState.getWalls()
 
     if len(food) > 0:
         closestFood = min(map(lambda x: manhattanDistance(pos, x), food))
+        closestFoodInd = -1
+        for idx in range(len(food)):
+            if manhattanDistance(pos,food[idx]) == closestFood:
+                closestFoodInd = idx
+                break
     else:
         closestFood = float("inf")
     
@@ -424,11 +434,7 @@ def betterEvaluationFunction(currentGameState):
         else:
             activeGhosts.append(ghost)
 
-    # Active
-    if(len(activeGhosts) > 0):
-        closestActiveGhostDistance = min(map(lambda x: manhattanDistance(pos,x.getPosition()), activeGhosts))
-    else:
-        closestActiveGhostDistance = float("inf")
+    
         
     # Scared    
     if(len(scaredGhosts) > 0):
@@ -436,19 +442,81 @@ def betterEvaluationFunction(currentGameState):
     else:
         closestScaredGhostDistance = float("inf")
     
-    parameters = {
-        "activeGhost"  : -20,
-        "scaredGhost"  :  10,
-        "closestFood"  :   1.2,
-        "closestPellet":   5
-    }
-            
+    #Closest Food
+    
+    def bfs_cost(s,t):
+        queue = [(s,0)]
+        visited = {s:1}
+        notFind = True
+        cost = 0
+        while queue and notFind:
+            v,c = queue.pop(0)
+            if v == t:
+                return c
+            x,y = v[0],v[1]
+            if walls[x+1][y] == False and (x+1,y) not in visited:
+                visited[(x+1,y)] = 1
+                queue.append(((x+1,y),c+1))
+                
+            if walls[x-1][y] == False and (x-1,y) not in visited:
+                visited[(x-1,y)] = 1
+                queue.append(((x-1,y),c+1))
+                
+            if walls[x][y+1] == False and (x,y+1) not in visited:
+                visited[(x,y+1)] = 1
+                queue.append(((x,y+1),c+1))
+                
+            if walls[x][y-1] == False and (x,y-1) not in visited:
+                visited[(x,y-1)] = 1
+                queue.append(((x,y-1),c+1))
+    
+    if closestFood > 1:
+        closestFood = bfs_cost(pos, food[closestFoodInd])
+    # print(closestFood)
     # parameters = {
-    #     "activeGhost"  : -10,
+    #     "activeGhost"  : -20,
     #     "scaredGhost"  :  10,
-    #     "closestFood"  :   2,
+    #     "closestFood"  :   1.2,
     #     "closestPellet":   5
     # }
+            
+    parameters = {
+        "activeGhost"  : -10,
+        "scaredGhost"  :  10,
+        "closestFood"  :   2,
+        "closestPellet":   5
+    }
+    
+    # Active
+    safe_distance1 = 3
+    safe_distance2 = 7
+    
+    if(len(activeGhosts) > 0):
+        closestActiveGhostDistance = min(map(lambda x: manhattanDistance(pos,x.getPosition()), activeGhosts))        
+        if closestActiveGhostDistance <= safe_distance1:
+            parameters["activeGhost"] = -100
+        # elif closestActiveGhostDistance <= safe_distance2:
+        #     parameters["activeGhost"] = -20
+        else:
+            parameters["activeGhost"] = -10
+    else:
+        closestActiveGhostDistance = float("inf")
+        
+        
+    
+    if closestFood == 0:
+        closestFood = float("inf")
+    if len(food) == 1:
+        parameters["closestFood"] = 10
+        
+    if closestPellet == 0:
+        closestFood = float("inf")
+    
+    if closestActiveGhostDistance == 0:
+        closestActiveGhostDistance = float("inf")
+    
+    if closestScaredGhostDistance == 0:
+        closestScaredGhostDistance = float("inf")
     
     Finalscore = currentGameState.getScore() \
                 + parameters["activeGhost"]*(1/closestActiveGhostDistance) \
