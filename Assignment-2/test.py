@@ -187,14 +187,30 @@ def find_domain(row, col, X, param):
             r_found = True
             break
 
+    # 21,7,10,7,1
+    
     if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
         d.append('M')
+        if (param['a'] + param['r'] == param['m']):
+            return d
   
     if r_found == False and count['r'] < param['r']:
         r_prior = True
         d.append('R')
     else:
         r_prior = False        
+        
+    # if X[row][col-1].value == 'A':
+    #     if count['a'] < param['a']:
+    #         d.append('A')
+    #     elif count['r'] < param['r']:
+    #         d.append('R')
+    
+    # if X[row][col-1].value == 'A':
+    #     if count['a'] < param['a']:
+    #         d.append('A')
+    #     elif count['r'] < param['r']:
+    #         d.append('R')
 
     if count['a'] < param['a']:
         d.append('A')
@@ -230,7 +246,7 @@ def back_track(row, col, nodes, param):
         #         print(nodes[r][c].value,end=" ")
         #     print()
         # print("\n\n")
-    
+
     # if col >= 2:
     #     print('2nd column, Count: {}, Row: {}, Col: {}'.format(count, row, col))
     
