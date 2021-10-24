@@ -1,5 +1,8 @@
-*.py
+
 *.pdf
 test_cases/*
 layouts/*
 *.zip
+
+
+Assignment-2/prac.ipynb

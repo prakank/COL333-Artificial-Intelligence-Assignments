@@ -172,11 +172,8 @@ def find_domain1(row, col, X, param):
     for r in range(row+1):
         if X[r][col].value != '':
             count[(X[r][col].value).lower()] += 1
-            
-    available = param['N'] - sum(count.values())
-    
-    d = []
-    
+          
+    d = []    
     if (col + 1) % 7 == 0:
         R_found = False
         for day in range(1,7):
@@ -196,8 +193,6 @@ def find_domain1(row, col, X, param):
         if X[row][col-day].value == 'R':
             r_found = True
             break
-
-    # 21,7,10,7,1    
     if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
         d.append('M')
         if (param['a'] + param['r'] == param['m']):
@@ -208,18 +203,6 @@ def find_domain1(row, col, X, param):
         d.append('R')
     else:
         r_prior = False        
-        
-    # if X[row][col-1].value == 'A':
-    #     if count['a'] < param['a']:
-    #         d.append('A')
-    #     elif count['r'] < param['r']:
-    #         d.append('R')
-    
-    # if X[row][col-1].value == 'A':
-    #     if count['a'] < param['a']:
-    #         d.append('A')
-    #     elif count['r'] < param['r']:
-    #         d.append('R')
 
     if count['a'] < param['a']:
         d.append('A')
@@ -231,8 +214,6 @@ def find_domain1(row, col, X, param):
         d.append('R')
         
     return d
-
-
     # return random.sample(d, len(d))
 
 def fast_solution(row, col, nodes, param, L):
@@ -267,7 +248,7 @@ def find_domain2(row, col, X, param):
         if X[r][col].value != '':
             count[(X[r][col].value).lower()] += 1
             
-    available = param['N'] - sum(count.values())
+    # available = param['N'] - sum(count.values())
     
     d = []
     
@@ -286,22 +267,102 @@ def find_domain2(row, col, X, param):
     r_prior = None
     min_val = (col%7)
 
-    for day in range(1,min_val+1):
-        if X[row][col-day].value == 'R':
-            r_found = True
-            break
+    # for day in range(1,min_val+1):
+    #     if X[row][col-day].value == 'R':
+    #         r_found = True
+    #         break
+        
+    # Heuristic
+    if min_val >= 4:
+        for day in range(1,min_val+1):
+            if X[row][col-day].value == 'R':
+                r_found = True
+                break
+    else:
+        r_found = True
+        
 
     # 21,7,10,7,1    
-    if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
-        d.append('M')
-        if (param['a'] + param['r'] == param['m']):
-            return d
+    # if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
+    #     d.append('M')
+    #     if (param['a'] + param['r'] == param['m']):
+    #         return d
   
-    if r_found == False and count['r'] < param['r']:
-        r_prior = True
-        d.append('R')
-    else:
-        r_prior = False        
+    # if r_found == False and count['r'] < param['r']:
+    #     r_prior = True
+    #     d.append('R')
+    # else:
+    #     r_prior = False        
+        
+    # S nurses
+    # maximize sum of M and E
+    # Priority assigned to M and E
+    
+    if X[row][col-1].value == 'R':
+        if count['m'] < param['m']:
+            d.append('M')
+            if (param['a'] + param['r'] == param['m']):
+                return d        
+        if count['a'] < param['a']:
+            d.append('A')            
+        if count['e'] < param['e']:
+            d.append('E')        
+        if count['r'] < param['r']:
+            d.append('R')
+    
+    if X[row][col-1].value == 'E':
+        if count['r'] < param['r'] and r_found == False:
+            d.append('R')        
+        if count['e'] < param['e']:
+            d.append('E')
+        if count['a'] < param['a']:
+            d.append('A')                            
+        if count['r'] < param['r'] and r_found == True:
+            d.append('R')
+        
+    if X[row][col-1].value == 'M':
+        if count['r'] < param['r'] and r_found == False:
+            d.append('R')        
+        if count['e'] < param['e']:
+            d.append('E')
+        if count['a'] < param['a']:
+            d.append('A')                    
+        if count['r'] < param['r'] and r_found == True:
+            d.append('R')
+    
+    if X[row][col-1].value == 'A':        
+        if count['m'] < param['m']:
+            d.append('M')
+            if (param['a'] + param['r'] == param['m']):
+                return ['M']            
+        if count['r'] < param['r'] and r_found == False:
+            d.append('R')
+        if count['a'] < param['a']:
+            d.append('A')                  
+        if count['r'] < param['r'] and r_found == True:
+            d.append('R')
+        if count['e'] < param['e']:
+            d.append('E')
+    
+    return d
+            
+
+# M, E > A, R
+
+# R -> M, A, E, R
+
+# E -> If R doesn't exist in batch of 7 ->  R, E, A
+#   -> Else E, A, R
+
+# M -> If R doesn't exist in batch of 7 ->  R, E, A
+#   -> Else E, A, R
+
+# A -> If R doesn't exist in batch of 7 ->  M, R, A, E
+#   -> Else M, A, R, E
+
+# M can only appear with A and R
+# A is preferred with A, R
+
         
     # if X[row][col-1].value == 'A':
     #     if count['a'] < param['a']:
@@ -315,16 +376,16 @@ def find_domain2(row, col, X, param):
     #     elif count['r'] < param['r']:
     #         d.append('R')
 
-    if count['a'] < param['a']:
-        d.append('A')
+    # if count['a'] < param['a']:
+    #     d.append('A')
         
-    if count['e'] < param['e']:
-        d.append('E')
+    # if count['e'] < param['e']:
+    #     d.append('E')
         
-    if (count['r'] < param['r']) and (r_prior == False):
-        d.append('R')
+    # if (count['r'] < param['r']) and (r_prior == False):
+    #     d.append('R')
         
-    return d
+    # return d
 
 count = 0
 def back_track(start_time, row, col, nodes, param, L):
@@ -339,10 +400,9 @@ def back_track(start_time, row, col, nodes, param, L):
     
     end_time = time.time()
     
-    if (end_time-start_time) > (param['T']-1):
+    if (end_time-start_time) > (param['T']-2):
         L['ans'] = []
         return L['ans']
-    
                 
     global count
     count+=1
@@ -374,6 +434,17 @@ def back_track(start_time, row, col, nodes, param, L):
     L['ans'] = []
     return L['ans']
 
+def print_count(X):
+    L = []
+    for i in range(len(X)):
+        count = 0
+        for j in range(len(X[i])):
+            if X[i][j].value == 'M' or X[i][j].value == 'E':
+                count+=1
+        L.append(count)
+    # print(L)
+    return L
+        
 def solve_csp(param):
     
     print(param)
@@ -428,12 +499,36 @@ def solve_csp(param):
     t1.join()
     t2.join()
     
-    end_time = time.time()
+    end_time = time.time()    
     
-    if len(L2['ans'])==0:       
-        return L1['ans']    
-    else:
-        return L2['ans']
+    if len(L1['ans']) > 0:
+        part_a = sorted(L1['ans'], key=lambda x: ordered(x), reverse=True)
+    
+    if len(L2['ans']) > 0:
+        part_b = sorted(L2['ans'], key=lambda x: ordered(x), reverse=True)
+    
+    count1 = print_count(part_a)
+    count2 = print_count(part_b)
+    
+    if count1 != None and count2 != None:
+        if sum(count1[:param['S']]) > sum(count2[:param['S']]):
+            return part_a
+        else:
+            print("PART B")
+            return part_b
+    
+    if count1 == None:
+        print("PART B")
+        return part_b
+    
+    if count2 == None:
+        return part_a    
+    
+    # if len(L2['ans'])==0:       
+    #     return L1['ans']
+    # else:
+    #     print("L2")
+    #     return L2['ans']
     
     # t2.join()
     
@@ -485,7 +580,7 @@ if __name__ == '__main__':
 
     start = time.time()
     result = solve_csp(param)
-    result = sorted(result, key=lambda x: ordered(x), reverse=True)
+    
     
     # if DAYS > 7:
     #     result = combine(DAYS, result, param)

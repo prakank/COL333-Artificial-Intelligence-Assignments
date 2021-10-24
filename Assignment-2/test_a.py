@@ -156,6 +156,13 @@ def arc_consistency(arcs, nodes, domain, param):
                 arcs.append((nodej, out_node))
     return True, domain
 
+def ordered(arr):
+    s = 0
+    for i in arr:
+        if i.value == 'M' or i.value == 'E':
+            s+=1
+    return s
+
 def find_domain(row, col, X, param):
     count = {'a':0, 'm':0, 'e':0, 'r':0}
     
@@ -187,8 +194,7 @@ def find_domain(row, col, X, param):
             r_found = True
             break
 
-    # 21,7,10,7,1
-    
+    # 21,7,10,7,1    
     if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
         d.append('M')
         if (param['a'] + param['r'] == param['m']):
@@ -238,7 +244,7 @@ def back_track(row, col, nodes, param):
     
     global count
     count+=1
-    if count % 20000 == 0:
+    if count % 10000000 == 0:
         # print("Printing ....")
         print('Count: {}, Row: {}, Col: {}'.format(count, row, col))
         # for r in range(row+1):
@@ -384,9 +390,11 @@ if __name__ == '__main__':
     print(sys.getrecursionlimit())
     
     result = solve_csp(param)
+    result = sorted(result, key=lambda x: ordered(x), reverse=True)
     
     # if DAYS > 7:
     #     result = combine(DAYS, result, param)
+    
     correct = check(result, param)
 
     dump_output(result)
