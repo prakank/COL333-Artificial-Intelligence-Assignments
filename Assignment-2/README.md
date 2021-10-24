@@ -2,14 +2,14 @@
 
 ### Inputting Parameters
 
-python script
-parameter file (input.csv)
-part number
+python script </br>
+parameter file (input.csv) </br>
+part number ('a' or 'b')</br>
 
 
 ### Execution
 
 For execution
 ```sh
-python3 python3 <filename>.py <input_path>.csv <part_number>
+python3 <filename>.py <input_path>.csv <part_number>
 ```
