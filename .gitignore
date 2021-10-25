@@ -1,4 +1,3 @@
-
 *.pdf
 test_cases/*
 layouts/*
@@ -6,3 +5,5 @@ layouts/*
 
 
 Assignment-2/prac.ipynb
+Assignment-2/extra.txt
+Assignment-2/test.py
