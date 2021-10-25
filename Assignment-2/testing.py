@@ -211,7 +211,7 @@ def PART_A(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):
@@ -526,7 +526,7 @@ def PART_B(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):
@@ -653,7 +653,7 @@ def PART_B(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):

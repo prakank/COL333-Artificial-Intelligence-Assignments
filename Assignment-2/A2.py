@@ -211,7 +211,7 @@ def PART_A(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):
@@ -301,8 +301,8 @@ def PART_A(input_path):
     # print(sys.getrecursionlimit())
     
     result = solve_csp(param)
-    result = sorted(result, key=lambda x: ordered(x), reverse=True) 
-    correct = check(result, param)
+    # result = sorted(result, key=lambda x: ordered(x), reverse=True) 
+    # correct = check(result, param)
     dump_output(result)
 
     # if correct:
@@ -517,7 +517,7 @@ def PART_B(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):
@@ -634,7 +634,7 @@ def PART_B(input_path):
         
         end_time = time.time()
         
-        if (end_time-start_time) > (param['T']-2):
+        if (end_time-start_time) > (param['T']-1):
             L['ans'] = []
             return L['ans']
         
@@ -644,7 +644,7 @@ def PART_B(input_path):
             val = curr_domain[i]
             
             # Early failure
-            if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):
@@ -657,7 +657,7 @@ def PART_B(input_path):
             consistent = True
             
             end_time = time.time()
-            if (end_time-start_time) > (param['T']-2):
+            if (end_time-start_time) > (param['T']-1):
                 L['ans'] = []
                 return L['ans']
             
@@ -729,6 +729,8 @@ def PART_B(input_path):
         t2.start()
         
         t1.join()
+        dump_output(L1['ans'])
+        
         t2.join()
         
         end_time = time.time()    
@@ -788,7 +790,7 @@ def PART_B(input_path):
     start = time.time()
     result = solve_csp(param)
     
-    correct = check(result, param)
+    # correct = check(result, param)
 
     dump_output(result)
 

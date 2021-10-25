@@ -261,7 +261,7 @@ def back_track(row, col, nodes, param):
     for i in range(len(curr_domain)):        
         val = curr_domain[i]
         
-        if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+        if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
                 r_found = False
                 for day in range(1,6):
                     if (nodes[row][col-day].value == 'R'):

@@ -414,11 +414,22 @@ def back_track(start_time, row, col, nodes, param, L):
     
     for i in range(len(curr_domain)):
         val = curr_domain[i]
+        
+        # Early failure
+        if val == 'A' and param['D'] >= 7 and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+            r_found = False
+            for day in range(1,6):
+                if (nodes[row][col-day].value == 'R'):
+                    r_found = True
+                    break
+            if not r_found: # Clash between M and R
+                continue
+            
         curr_node.assign_node(val)
         consistent = True
         
         end_time = time.time()
-        if (end_time-start_time) > (param['T']-2):
+        if (end_time-start_time) > (param['T']-1):
             L['ans'] = []
             return L['ans']
         
