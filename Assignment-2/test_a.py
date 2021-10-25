@@ -244,7 +244,7 @@ def back_track(row, col, nodes, param):
     
     global count
     count+=1
-    if count % 10000000 == 0:
+    if count % 100000 == 0:
         # print("Printing ....")
         print('Count: {}, Row: {}, Col: {}'.format(count, row, col))
         # for r in range(row+1):
@@ -260,6 +260,16 @@ def back_track(row, col, nodes, param):
     
     for i in range(len(curr_domain)):        
         val = curr_domain[i]
+        
+        if val == 'A' and (col+2)%7==0 and (param['r'] + param['a'] == param['m']):
+                r_found = False
+                for day in range(1,6):
+                    if (nodes[row][col-day].value == 'R'):
+                        r_found = True
+                        break
+                if not r_found: # Clash between M and R
+                    continue
+        
         curr_node.assign_node(val)
         consistent = True
         
@@ -386,11 +396,11 @@ if __name__ == '__main__':
     # DAYS = param['D']
     # param['D'] = min(param['D'], 7)
     
-    sys.setrecursionlimit(4000)
-    print(sys.getrecursionlimit())
+    # sys.setrecursionlimit(4000)
+    # print(sys.getrecursionlimit())
     
     result = solve_csp(param)
-    result = sorted(result, key=lambda x: ordered(x), reverse=True)
+    # result = sorted(result, key=lambda x: ordered(x), reverse=True)
     
     # if DAYS > 7:
     #     result = combine(DAYS, result, param)

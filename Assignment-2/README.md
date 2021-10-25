@@ -1,4 +1,4 @@
-## Nurse Rostering Schedule
+## Automated Nurse Rostering Schedule
 
 ### Inputting Parameters
 
