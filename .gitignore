@@ -1,9 +1,11 @@
-*.pdf
+# Genral
 test_cases/*
 layouts/*
 *.zip
 
-
+# Assignment-2
 Assignment-2/prac.ipynb
 Assignment-2/extra.txt
 Assignment-2/test.py
+Assignment-2/input.csv
+Assignment-2/A2-2019CS50441-2019CS10444
