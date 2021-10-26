@@ -18,7 +18,7 @@ python3 A2.py InputFile_PartNum.csv
 ### Testing 
 
 The solution obtained is dumped into **solution.json** file </br>
-We have `tester.py` script which loops over a set of parameters and executes A2.py </br>
+We have `tester.py` script which loops over a set of parameters and executes testing.py </br>
 Output of `tester.py` can be stored in output file using:
 ```sh
 python3 tester.py > output.txt
