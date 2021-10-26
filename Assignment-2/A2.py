@@ -6,7 +6,6 @@ import time
 import json
 import copy
 import random
-import threading
 
 def PART_A(input_path):
     
