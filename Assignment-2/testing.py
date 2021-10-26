@@ -170,10 +170,13 @@ def PART_A(input_path):
         r_prior = None
         min_val = (col%7)
 
-        for day in range(1,min_val+1):
-            if X[row][col-day].value == 'R':
-                r_found = True
-                break
+        if param['D'] >= 7:
+            for day in range(1,min_val+1):
+                if X[row][col-day].value == 'R':
+                    r_found = True
+                    break
+        else:
+            r_found = True
 
         if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
             d.append('M')
@@ -304,8 +307,8 @@ def PART_A(input_path):
     param['e'] = int(sys.argv[7])
     param['r'] = param['N'] - param['m'] - param['a'] - param['e']
     
-    sys.setrecursionlimit(2000)
-    print(sys.getrecursionlimit())
+    sys.setrecursionlimit(1500)
+    # print(sys.getrecursionlimit())
     
     result = solve_csp(param)
     result = sorted(result, key=lambda x: ordered(x), reverse=True) 
@@ -486,10 +489,14 @@ def PART_B(input_path):
         r_prior = None
         min_val = (col%7)
 
-        for day in range(1,min_val+1):
-            if X[row][col-day].value == 'R':
-                r_found = True
-                break
+        if param['D'] >= 7:
+            for day in range(1,min_val+1):
+                if X[row][col-day].value == 'R':
+                    r_found = True
+                    break
+        else:
+            r_found = True
+            
         if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
             d.append('M')
             if (param['a'] + param['r'] == param['m']):
@@ -576,7 +583,7 @@ def PART_B(input_path):
         #         break
             
         # Heuristic
-        if min_val >= 4:
+        if min_val >= 4 and param['D'] >= 7:
             for day in range(1,min_val+1):
                 if X[row][col-day].value == 'R':
                     r_found = True

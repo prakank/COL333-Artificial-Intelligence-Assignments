@@ -24,18 +24,18 @@ def PART_A(input_path):
 
     def dump_output(X):
         if len(X) == 0:
-            print('No solution')
+            # print('No solution')
             ans = dict()
         else:
             N = len(X)
             M = len(X[0])
             ans = dict()
             for i in range(N):
-                print('N-'+str(i)+': ',end='')
+                # print('N-'+str(i)+': ',end='')
                 for j in range(M):
-                    print(X[i][j].value + ' ',end=' ')
+                    # print(X[i][j].value + ' ',end=' ')
                     ans['N{}_{}'.format(str(i),str(j))] = X[i][j].value
-                print()
+                # print()
                 
         with open('solution.json' , 'w') as file:
             json.dump(ans,file)
@@ -170,10 +170,13 @@ def PART_A(input_path):
         r_prior = None
         min_val = (col%7)
 
-        for day in range(1,min_val+1):
-            if X[row][col-day].value == 'R':
-                r_found = True
-                break
+        if param['D'] >= 7:
+            for day in range(1,min_val+1):
+                if X[row][col-day].value == 'R':
+                    r_found = True
+                    break
+        else:
+            r_found = True
 
         if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
             d.append('M')
@@ -232,26 +235,26 @@ def PART_A(input_path):
 
     def solve_csp(param):
         
-        print("Params:",param,"\n")
+        # print("Params:",param,"\n")
         
         if param['m'] + param['a'] + param['e'] > param['N']:
-            print('Invalid arguments for m, a, e, N')
-            print( '(m + a + e <= N) should hold')
+            # print('Invalid arguments for m, a, e, N')
+            # print( '(m + a + e <= N) should hold')
             return []
         
         if param['D'] >= 7 and param['m'] + param['a'] + param['e'] == param['N']:
-            print('Invalid arguments for m, a, e, N')
-            print( '(m + a + e < N) should hold {Strictly less cause each nurse needs to have atleast 1 R shift in a week}')
+            # print('Invalid arguments for m, a, e, N')
+            # print( '(m + a + e < N) should hold {Strictly less cause each nurse needs to have atleast 1 R shift in a week}')
             return []
         
         if param['r'] + param['a'] < param['m']:
-            print('Invalid arguments for m, a, e, N')
-            print("Sum of param r and a should be greater than param m")
+            # print('Invalid arguments for m, a, e, N')
+            # print("Sum of param r and a should be greater than param m")
             return []
         
         if (param['r'] * 7 < param['N'] and param['D'] >= 7):
-            print('Invalid arguments for m, a, e, N')
-            print("param r should be high enough to assign Rest day to each nurse")
+            # print('Invalid arguments for m, a, e, N')
+            # print("param r should be high enough to assign Rest day to each nurse")
             return []
         
         nodes = initialize_param(param['N'], param['D'])    
@@ -310,7 +313,7 @@ def PART_A(input_path):
     # else:
     #     print("\nERROR\n")
     end = time.time()    
-    print('Time: ' + str(round(end-start,5)) + 's')
+    # print('Time: ' + str(round(end-start,5)) + 's')
 
 
 def PART_B(input_path):
@@ -331,18 +334,18 @@ def PART_B(input_path):
 
     def dump_output(X):
         if len(X) == 0:
-            print('No solution')
+            # print('No solution')
             ans = dict()
         else:
             N = len(X)
             M = len(X[0])
             ans = dict()
             for i in range(N):
-                print('N-'+str(i)+': ',end='')
+                # print('N-'+str(i)+': ',end='')
                 for j in range(M):
-                    print(X[i][j].value + ' ',end=' ')
+                    # print(X[i][j].value + ' ',end=' ')
                     ans['N{}_{}'.format(str(i),str(j))] = X[i][j].value
-                print()
+                # print()
                 
         with open('solution.json' , 'w') as file:
             json.dump(ans,file)
@@ -477,10 +480,14 @@ def PART_B(input_path):
         r_prior = None
         min_val = (col%7)
 
-        for day in range(1,min_val+1):
-            if X[row][col-day].value == 'R':
-                r_found = True
-                break
+        if param['D'] >= 7:
+            for day in range(1,min_val+1):
+                if X[row][col-day].value == 'R':
+                    r_found = True
+                    break
+        else:
+            r_found = True
+            
         if ((X[row][col-1].value == 'R' or X[row][col-1].value == 'A') and count['m'] < param['m']):
             d.append('M')
             if (param['a'] + param['r'] == param['m']):
@@ -567,7 +574,7 @@ def PART_B(input_path):
         #         break
             
         # Heuristic
-        if min_val >= 4:
+        if min_val >= 4 and param['D'] >= 7:
             for day in range(1,min_val+1):
                 if X[row][col-day].value == 'R':
                     r_found = True
@@ -634,7 +641,7 @@ def PART_B(input_path):
         
         end_time = time.time()
         
-        if (end_time-start_time) > (param['T']-1):
+        if (end_time-start_time) > (param['T']-2):
             L['ans'] = []
             return L['ans']
         
@@ -657,7 +664,7 @@ def PART_B(input_path):
             consistent = True
             
             end_time = time.time()
-            if (end_time-start_time) > (param['T']-1):
+            if (end_time-start_time) > (param['T']-2):
                 L['ans'] = []
                 return L['ans']
             
@@ -683,26 +690,26 @@ def PART_B(input_path):
         return L
             
     def solve_csp(param):
-        print("Params:",param,"\n")
+        # print("Params:",param,"\n")
         
         if param['m'] + param['a'] + param['e'] > param['N']:
-            print('Invalid arguments for m, a, e, N')
-            print( '(m + a + e <= N) should hold')
+            # print('Invalid arguments for m, a, e, N')
+            # print( '(m + a + e <= N) should hold')
             return []
         
         if param['D'] >= 7 and param['m'] + param['a'] + param['e'] == param['N']:
-            print('Invalid arguments for m, a, e, N')
-            print( '(m + a + e < N) should hold {Strictly less cause each nurse needs to have atleast 1 R shift in a week}')
+            # print('Invalid arguments for m, a, e, N')
+            # print( '(m + a + e < N) should hold {Strictly less cause each nurse needs to have atleast 1 R shift in a week}')
             return []
         
         if param['r'] + param['a'] < param['m']:
-            print('Invalid arguments for m, a, e, N')
-            print("Sum of param r and a should be greater than param m")
+            # print('Invalid arguments for m, a, e, N')
+            # print("Sum of param r and a should be greater than param m")
             return []
         
         if (param['r'] * 7 < param['N'] and param['D'] >= 7):
-            print('Invalid arguments for m, a, e, N')
-            print("param r should be high enough to assign Rest day to each nurse")
+            # print('Invalid arguments for m, a, e, N')
+            # print("param r should be high enough to assign Rest day to each nurse")
             return []
         
         # r, a, e, m
@@ -722,16 +729,22 @@ def PART_B(input_path):
         L1 = {}
         L2 = {}
         start_time = time.time()
-        t1 = threading.Thread(target=fast_solution, args=(0, 1, copy.deepcopy(nodes), param,L1,))
-        t2 = threading.Thread(target=back_track, args=(time.time(), 0, 1, copy.deepcopy(nodes), param,L2,))
         
-        t1.start()
-        t2.start()
+        fast_solution(0, 1, copy.deepcopy(nodes), param, L1)
+        dump_output(sorted(L1['ans'], key=lambda x: ordered(x), reverse=True))
         
-        t1.join()
-        dump_output(L1['ans'])
+        back_track(time.time(), 0, 1, copy.deepcopy(nodes), param, L2)
         
-        t2.join()
+        # t1 = threading.Thread(target=fast_solution, args=(0, 1, copy.deepcopy(nodes), param,L1,))
+        # t2 = threading.Thread(target=back_track, args=(time.time(), 0, 1, copy.deepcopy(nodes), param,L2,))
+        
+        # t1.start()
+        # t2.start()
+        
+        # t1.join()
+        # dump_output(L1['ans'])
+        
+        # t2.join()
         
         end_time = time.time()    
         
@@ -754,8 +767,8 @@ def PART_B(input_path):
             return part_b
         
         if count2 == None:
-            return part_a    
-    
+            return part_a
+        
     def check(X, param):
         if not len(X):
             # print("\nERROR\n")
@@ -781,7 +794,7 @@ def PART_B(input_path):
                         return False
         return True
     
-    start = time.time()    
+    # start = time.time()    
     param = read_input(input_path)
     
     # sys.setrecursionlimit(4000)
@@ -789,9 +802,7 @@ def PART_B(input_path):
 
     start = time.time()
     result = solve_csp(param)
-    
     # correct = check(result, param)
-
     dump_output(result)
 
     # if correct:
@@ -801,20 +812,27 @@ def PART_B(input_path):
         
     end = time.time()
     
-    print('Time: ' + str(round(end-start,5)) + 's')
+    # print('Time: ' + str(round(end-start,5)) + 's')
 
 
 if __name__ == '__main__':
     
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         print("\nIncorrect Format ....")
-        print("Correct format -> python3 <filename>.py <input_path>.csv <part_number>\n")
+        print("Correct format -> python3 A2.py InputFile_PartNum.csv\n")
         sys.exit(1)
-    input_path, part = sys.argv[1], sys.argv[2]
+        
+    # input_path, part = sys.argv[1], sys.argv[2]
+    
+    input_path = sys.argv[1]
+    part = input_path[-5]
     
     if part == 'a':
         PART_A(input_path)
     else:
         PART_B(input_path)
     
-    
+
+# Look out for these settings
+# 21,7,10,7,1
+# 14,7,7,5,0 <- No solution found

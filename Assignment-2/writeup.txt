@@ -1,0 +1,146 @@
+﻿COL333 Principles of AI
+Assignment 2 Report
+Automated Nurse Rostering System
+
+
+Submitted by-
+Pratyush Saini (2019CS10444)
+Prakhar Aggarwal (2019CS50441)
+
+
+
+Part 1
+Problem Formulation:
+
+
+We modelled the Problem as a CSP with the following parameters:
+
+
+X = X[i,j] , a 2D Matrix of Variable X[i,j] which denotes the shift of Nurse i on day j
+Dij = {M,A,R,E}, the Domain set for each variable X[i,j]
+
+
+Constraints:
+The hard constraints we needed to satisfy were:
+1. count(M) = m , count(A) = a, count(E) = e for all days
+2. M cannot be preceded by M or E for any day
+3. At least one R should occur in any continuous batch of 7 days.
+
+
+These can be formally written as: 
+
+
+* For all d, 1<=d<=D,
+   1. Count(M) in column d = m
+   2. Count(A) in column d = a
+   3. Count(E) in column d = e
+* If X[i,j] = M, then X[i,j-1] cannot be equal to M or E
+* Count of R in X[7k, 7k+6] >= 1 for all Nurses. k >= 0, 7k+6 < D
+
+
+No solution cases:
+
+    The input is declared invalid if certain conditions are met:
+
+* 1.) param['m'] + param['a'] + param['e'] > param['N']
+* 2.) param['D'] >= 7 and param['m'] + param['a'] + param['e'] == param['N']
+* 3.) param['r'] + param['a'] < param['m']
+* 4.) param['r'] * 7 < param['N'] and param['D'] >= 7
+
+
+Algorithm:
+
+
+CSP-Backtracking (row, col, Assignment):
+        If Assignment = Goal : return Assignment
+        Var = Assignment[row][col]
+        D = Ordering on domain (X) meeting the constraints
+        For each d in D:
+                Assign Var to d
+                If Assignment is valid:
+                        new_row = row+1, new_col = col
+                        If (row = N): 
+                                new_row = 1
+                                col = col+1 
+                        Result = CSP-Backtracking(new_row, new_col , Assignment)
+                        If (Result != Failure):
+                                Return Result
+                        De-Assign Var to null (Back-tracking step)
+        Return Failure
+
+
+Optimizations:
+
+
+While choosing domain for some variable Xij
+
+
+If count(M) = m, we exclude M from Dij
+If count(A) = a, we exclude A from Dij
+If count(E) = e, we exclude E from Dij
+
+
+If X[i][j-1] = E or M, we exclude M from D[i][j]
+
+If j is last day of week and Count of R in current week = 0, we assign D[i][j] as a singleton [R]
+
+
+If current week already contains R, we give least preference to R in the current domain while checking consistent assignments during back-tracking.
+
+
+If a+r = m and X[i][j-1] = A or X[i][j] = R, then D[i][j] = [M]
+
+If Days >= 7, if we are at the 2nd last day of a week and if R hasn't appeared in the week and param['a'] + param['r'] == param['m], then current cell can't have value A (Helps in early failure detection)
+
+
+All these optimizations helped us to reduce the space size of the CSP to a greater extent.
+Part 2
+
+
+Problem Formulation:
+Same as part a with some soft constraints
+
+
+Constraints:
+
+
+The hard constraints we needed to satisfy are:
+* Same as part-a
+
+
+The soft constraints in the problem statement are:
+* Given S senior nurses, we need to prioritize M, E over A, R for these nurses under the above constraints
+
+
+The additional constraint can be formally written as:
+* Σ(i) Σ(j) 1 {X[i][j] == ‘W’ or X[i][j] == ‘E’} should be maximized where    
+0 <= i < S, 0 <= j < D 
+
+
+Optimizations:
+
+The Backtracking algorithm is the same as in part-A. Only change is in the way the domain for the current cell is computed. 
+Order for various elements taken is:
+* If X[i][j-1] == ‘R’ : M, A, E, R 
+
+
+* If X[i][j-1] == ‘E’
+   * If R doesn’t exist in current week : R, E, A
+   * Else, E, A, R
+
+
+* If X[i][j-1] == ‘M’
+   * If R doesn’t exist in current week : R, E, A
+   * Else, E, A, R
+
+
+* If X[i][j-1] == ‘A’
+   * If R doesn’t exist in current week : M, R, A, E
+   * Else, M, A, R, E
+
+
+This order is decided on the basis of likeliness of A with R and M with E. Also, for A and R, M is preferred over others because M can follow only A,R.
+
+Also, just to avoid exceeding the time limit T, we have computed a fast_solution (solution for part 'a') to return just in case part b's solution exceeds time limit.
+
+The final solution obtained using the algorithm is reordered on the key = count(‘M’) + count(‘E’) to maximize the weight.
