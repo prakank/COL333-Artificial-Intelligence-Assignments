@@ -749,9 +749,15 @@ def PART_B(input_path):
         
         if len(L1['ans']) > 0:
             part_a = sorted(L1['ans'], key=lambda x: ordered(x), reverse=True)
-        
+        else:
+            return []
+
         if len(L2['ans']) > 0:
             part_b = sorted(L2['ans'], key=lambda x: ordered(x), reverse=True)
+        elif len(L1['ans']) > 0:
+            return part_a
+        else:
+            return []
         
         count1 = print_count(part_a)
         count2 = print_count(part_b)
