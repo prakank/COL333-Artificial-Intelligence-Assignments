@@ -105,7 +105,7 @@ class MarkovDecisionProblem:
         if dest == 1:
             self.dest = self.Node(self.Rloc.row, self.Rloc.col)
         elif dest == 2:
-            self.src = self.Node(self.Gloc.row, self.Gloc.col)
+            self.dest = self.Node(self.Gloc.row, self.Gloc.col)
         elif dest == 3:
             self.dest = self.Node(self.Yloc.row, self.Yloc.col)
         else:
@@ -121,19 +121,19 @@ class MarkovDecisionProblem:
                 val = temp
                 bestAction = i
         
-        if bestAction == 4 and self.passenger.row == r \
-            and self.passenger.col == c and self.passengerPicked == False: # Pickup
-                self.passengerPicked = True
+        # if bestAction == 4 and self.passenger.row == r \
+        #     and self.passenger.col == c and self.passengerPicked == False: # Pickup
+        #         self.passengerPicked = True
         
-        if self.passengerPicked == True and bestAction <= 3:
-            if bestAction not in self.grid[r][c].forbiddenActions:                
-                if bestAction == 0: self.passenger.row = r-1
-                if bestAction == 1: self.passenger.col = c+1
-                if bestAction == 2: self.passenger.row = r+1
-                if bestAction == 3: self.passenger.row = c-1
+        # if self.passengerPicked == True and bestAction <= 3:
+        #     if bestAction not in self.grid[r][c].forbiddenActions:                
+        #         if bestAction == 0: self.passenger.row = r-1
+        #         if bestAction == 1: self.passenger.col = c+1
+        #         if bestAction == 2: self.passenger.row = r+1
+        #         if bestAction == 3: self.passenger.row = c-1
         
-        if bestAction == 5 and self.passengerPicked == True: # Putdown
-            self.passengerPicked = False
+        # if bestAction == 5 and self.passengerPicked == True: # Putdown
+        #     self.passengerPicked = False
             
             
         return val, bestAction
@@ -186,7 +186,8 @@ class MarkovDecisionProblem:
         
         elif reach_state == 4: # Pickup
             if r == self.passenger.row and c == self.passenger.col:
-                return -1
+                # return -1
+                return 1
             else:
                 return -10
             
@@ -195,27 +196,29 @@ class MarkovDecisionProblem:
                 return 20
             elif self.passengerPicked == True:
                 return -1
+            elif r == self.passenger.row and c == self.passenger.col:
+                return -1
             else:
                 return -10
 
     def run(self):
         self.utility  = [[0.0 for i in range(self.cols)] for j in range(self.rows)]
-        utility_temp  = [[0.0 for i in range(self.cols)] for j in range(self.rows)]
-        iteration = 0
+        self.policy   = [[0.0 for i in range(self.cols)] for j in range(self.rows)]
         
-        print("Passenger:({},{})".format(self.passenger.row, self.passenger.col))
-        print("Destination:({},{})".format(self.dest.row, self.dest.col))
-        print("Taxi:({},{})".format(self.taxi.row,self.taxi.col))
+        utility_temp  = [[0.0 for i in range(self.cols)] for j in range(self.rows)]
+        iteration = 0                
 
         while True:
             iteration+=1
             delta = 0.0
-            self.passengerPicked = False
 
             for r in range(self.rows):
                 for c in range(self.cols):
                     utility_temp[r][c], action = self.utilityValue(r,c)
+                    self.policy[r][c] = action
+                    
                     delta = max(delta, abs(utility_temp[r][c] - self.utility[r][c] ))
+                    
             self.utility = copy.deepcopy(utility_temp)
 
             print("Iteration:{}, Delta:{}".format(iteration, delta))
@@ -224,11 +227,24 @@ class MarkovDecisionProblem:
                 break
         
         print("\nConverged\nIterations:{}, Max-Norm:{}".format(iteration, delta))
+        print("Passenger:({},{})".format(self.passenger.row, self.passenger.col))
+        print("Destination:({},{})".format(self.dest.row, self.dest.col))
+        print("Taxi:({},{})".format(self.taxi.row,self.taxi.col))
         for r in range(self.rows):
             for c in range(self.cols):
-                print(round(self.utility[r][c], 3), end=" ")
+                # print(round(self.utility[r][c], 3), end=" ")
+                action = self.policy[r][c]
+                direction = ""
+                if action == 0: direction = "↑"
+                elif action == 1: direction = "→"
+                elif action == 2: direction = "↓"
+                elif action == 3: direction = "←"
+                elif action == 4: direction = "Pick"
+                elif action == 5: direction = "Putdown"
+                else: direction = "Error"
+                print(direction, end=" ")
             print()
                 
 if __name__ == '__main__':
-    MDP = MarkovDecisionProblem(0.9, 0.01, 0.85, 'easy')
+    MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy')
     MDP.run()
