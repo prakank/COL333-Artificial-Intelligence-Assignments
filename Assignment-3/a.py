@@ -48,14 +48,14 @@ class MarkovDecisionProblem:
                         self.transitions[action][0]["p"] += self.transitions[action][i]["p"]
                         self.transitions[action][i]["p"] = 0
 
-    def __init__(self, discount, epsilon, success_prob, gridType, params):
+    def __init__(self, discount, epsilon, success_prob, params):
         self.possibleActions = ["N", "S", "W", "E", "U", "D"]
         self.discount = discount
         self.epsilon = epsilon
         self.discountedEpsilon = epsilon*(1-discount)/discount
         self.success_prob = success_prob
         self.passengerPicked = False
-        self.gridType = gridType        
+        self.gridType = params['gridType']
         self.generate(params)
     
     def generate(self, params):
@@ -117,14 +117,10 @@ class MarkovDecisionProblem:
             self.taxi = taxi
 
             def depot(x):
-                if x == 1:
-                    loc = self.Rloc
-                elif x == 2:
-                    loc = self.Gloc
-                elif x == 3:
-                    loc = self.Yloc
-                else:
-                    loc = self.Bloc
+                if x == 1: loc = self.Rloc
+                elif x == 2: loc = self.Gloc
+                elif x == 3: loc = self.Yloc
+                else: loc = self.Bloc
                 return loc
 
             self.passenger = depot(passenger)
@@ -238,27 +234,6 @@ def value_iteration(MDP):
         reward = ret["r"]
         print(action, ret)
 
-        # for r in range(self.rows):
-        #     for c in range(self.cols):
-        #         # print(round(self.utility[r][c], 3), end=" ")
-        #         action = self.policy[r][c]
-        #         direction = ""
-        #         if action == 0:
-        #             direction = "↑"
-        #         elif action == 1:
-        #             direction = "→"
-        #         elif action == 2:
-        #             direction = "↓"
-        #         elif action == 3:
-        #             direction = "←"
-        #         elif action == 4:
-        #             direction = "Pick"
-        #         elif action == 5:
-        #             direction = "Putdown"
-        #         else:
-        #             direction = "Error"
-        #         print(direction, end=" ")
-
 def simulate(MDP, ps, tr, tc, cr, cc, action):
     r = random.random()
     # print(r)
@@ -339,6 +314,7 @@ def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, 
 if __name__ == '__main__':
     
     params = {
+        'gridType': 'easy',
         'rows': 5,
         'cols': 5,
         'passenger': (4,3),
@@ -346,5 +322,5 @@ if __name__ == '__main__':
         'taxi': (1,4)
     }
     
-    MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy', params=params)
+    MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, params=params)
     value_iteration(MDP)
