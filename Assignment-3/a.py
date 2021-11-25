@@ -224,18 +224,14 @@ def utilityValue(MDP, params, ps, tr, tc, cr, cc, policy=False):
 def Q_Value(MDP, params, ps, tr, tc, cr, cc, action):
     node = MDP.grid[ps][tr][tc][cr][cc]
     q = 0
-    try:
-        for trans in node.transitions[action]:
-            nps, ntr, ntc, ncr, ncc = trans["state"]
-            if trans["p"] != 0:
-                q += (trans["p"] * (trans["r"] + params['discount'] *
-                                    MDP.V[nps][ntr][ntc][ncr][ncc]))
-    except:
-        print(ps, tr, tc, cr, cc)
-        print(node.transitions, action)
+    for trans in node.transitions[action]:
+        nps, ntr, ntc, ncr, ncc = trans["state"]
+        if trans["p"] != 0:
+            q += (trans["p"] * (trans["r"] + params['discount'] *
+                                MDP.V[nps][ntr][ntc][ncr][ncc]))    
     return q
 
-def value_iteration(MDP_params, params):
+def value_iteration(MDP_params, params, simulate_policy=False):
     
     MDP = MarkovDecisionProblem(MDP_params)
     data = []
@@ -283,26 +279,35 @@ def value_iteration(MDP_params, params):
     action = ''
     picked = False
     step   = 0
+    
+    state_action_seq = [(0,tr, tc, cr, cc)]
 
-    while not (tr == MDP.dest[0] and tc == MDP.dest[1] and picked == False and cr == tr and cc == tc) and step < 500:
+    while simulate_policy == True and not (tr == MDP.dest[0] and tc == MDP.dest[1] and picked == False and cr == tr and cc == tc) and step <= 20:
         if not picked:
             action = MDP.policy[0][tr][tc][cr][cc]
         else:
             action = MDP.policy[1][tr][tc][tr][tc]
+        
+        state_action_seq.append(action)
+        
         ret = MDP.simulate(picked, tr, tc, cr, cc, action)
         (picked, tr, tc, cr, cc) = ret["state"]
+        
+        state_action_seq.append((picked, tr, tc, cr, cc))
+        
         reward = ret["r"]
         step += 1
         # print(action, ret)
         # time.sleep(0.1)
     
-    return data
+    if simulate_policy == False:
+        return data
+
+    return state_action_seq
 
 def discount_vs_iteration(MDP_params, params):
     discount_list = {0.01:[], 0.1:[], 0.5:[], 0.8:[], 0.99:[]}
     for discount in discount_list:
-        # if discount > 0.1:
-        #     continue
         params["discount"] = discount
         discount_list[discount] = value_iteration(MDP_params, params)
     
@@ -314,18 +319,32 @@ def discount_vs_iteration(MDP_params, params):
     for discount in discount_list:
         if discount_list[discount] == None or len(discount_list[discount]) == 0: continue
         x = np.arange(1,len(discount_list[discount])+1)
-        plt.plot(x, discount_list[discount], label='Discount='+str(discount))
+        plt.plot(x, discount_list[discount], label='discount='+str(discount))
+
     plt.legend()
-    plt.savefig('Discount_vs_Convergence.jpg')
+    plt.savefig('output/discount_vs_convergence.jpg')
     plt.show()
+
+def value_iter_partc(MDP_params, params):
+    discount_list = {0.1:[], 0.99:[]}
+    
+    for discount in discount_list:
+        params[discount] = discount
+        discount_list[discount] = value_iteration(MDP_params, params, simulate_policy=True)
+    
+    print(discount_list[0.1])
+    print(discount_list[0.99])
 
 def new_policy(MDP, params, ps, tr, tc, cr, cc):
     _, action = utilityValue(MDP, params, ps, tr, tc, cr, cc)
     return action
 
-def policy_iteration_iterative(MDP_params, params):
+def policy_iteration_iterative(MDP_params, params, plotting=False, V_opt=None):
     MDP = MarkovDecisionProblem(MDP_params)
     data = []
+    
+    if V_opt != None:
+        data.append(max(abs(np.min(np.asarray(V_opt))), np.max(np.asarray(V_opt))))
     
     iteration = 0
     
@@ -349,6 +368,7 @@ def policy_iteration_iterative(MDP_params, params):
         iteration += 1
         delta = 0.0
         converged = True
+        max_norm = -inf
         
         for ps in range(2):
             for tr in range(MDP.rows):
@@ -359,14 +379,16 @@ def policy_iteration_iterative(MDP_params, params):
                                 continue
                             if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
                                 continue
-                            try:
-                                MDP.V_temp[ps][tr][tc][cr][cc] = utilityValue(MDP, params, ps, tr, tc, cr, cc, policy=True)
-                            except :
-                                print(MDP.grid[ps][tr][tc][cr][cc].transitions)
-                                sys.exit(1)
-                                
+                            MDP.V_temp[ps][tr][tc][cr][cc] = utilityValue(MDP, params, ps, tr, tc, cr, cc, policy=True)
+
                             delta = max(delta, abs(
                                 MDP.V_temp[ps][tr][tc][cr][cc] - MDP.V[ps][tr][tc][cr][cc]))
+                            
+                            if V_opt != None:
+                                max_norm = max(max_norm, abs(MDP.V_temp[ps][tr][tc][cr][cc] - V_opt[ps][tr][tc][cr][cc]))
+        
+        if V_opt != None:
+            data.append(max_norm)
     
         MDP.V = copy.deepcopy(MDP.V_temp)
         
@@ -387,9 +409,10 @@ def policy_iteration_iterative(MDP_params, params):
         
         
         print("Iteration:{}, Delta:{}".format(iteration, delta))
-        data.append(delta)
         
-        if delta <= params['discountedEpsilon'] or converged:
+        if plotting == True and iteration == 50:
+            break        
+        elif plotting == False and (delta <= params['discountedEpsilon'] or converged):
             break
     
     print("\nConverged\nDiscount:{}, Iterations:{}, Max-Norm:{}".format(params['discount'], iteration, delta))
@@ -417,11 +440,174 @@ def policy_iteration_iterative(MDP_params, params):
         # print(action, ret)
         # time.sleep(0.1)
     
-    return data
-
-def policy_iteration_linear_algebra(MDP_params, params):
-    pass
+    if V_opt != None:
+        return data
     
+    return MDP.V
+
+def policy_iteration_linear_algebra(MDP_params, params, plotting=False, V_opt=None):
+    MDP = MarkovDecisionProblem(MDP_params)
+    
+    params['discountedEpsilon'] = params['epsilon'] * \
+        (1-params['discount'])/params['discount']
+        
+    state_encoder = {}
+    state_decoder = {}
+    
+    idx = 0
+    
+    data = []
+    
+    if V_opt != None:
+        data.append(max(abs(np.min(np.asarray(V_opt))), np.max(np.asarray(V_opt))))
+    
+    for ps in range(2):
+        for tr in range(MDP.rows):
+            for tc in range(MDP.cols):
+                for cr in range(MDP.rows):
+                    for cc in range(MDP.cols):
+                        # MDP.policy[ps][tr][tc][cr][cc] = MDP.possibleActions[random.randrange(6)]
+                        MDP.policy[ps][tr][tc][cr][cc] = 'N'
+                        val = (ps, tr, tc, cr, cc)
+                        state_encoder[val] = idx
+                        state_decoder[idx] = val    
+                        idx+=1
+                        
+    iteration = 0
+    while True:
+        iteration += 1
+        delta = 0.0
+        converged = True
+        
+        A = np.zeros((idx, idx))
+        B = np.zeros(idx)
+        cnt = -1
+                            
+        for ps in range(2):
+            for tr in range(MDP.rows):
+                for tc in range(MDP.cols):
+                    for cr in range(MDP.rows):
+                        for cc in range(MDP.cols):
+                            cnt+=1
+                            if not MDP.grid[ps][tr][tc][cr][cc]:
+                                continue
+                            if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
+                                continue              
+                            
+                            temp = np.zeros(idx)
+                            temp[state_encoder[(ps,tr,tc,cr,cc)]] += 1.0
+                            # temp[cnt] += 1.0
+                            const = 0.0
+
+                            for s in MDP.grid[ps][tr][tc][cr][cc].transitions[MDP.policy[ps][tr][tc][cr][cc]]:
+                                if s['p'] > 0:
+                                    state = s['state']
+                                    temp[state_encoder[state]] += (-s['p']*params['discount'])
+                                    const += s['p']*s['r']
+                            
+                            # temp[state_encoder[(ps,tr,tc,cr,cc)]] 
+                            
+                            A[cnt,:] = temp
+                            B[cnt] = const
+                            
+        C = np.dot(np.linalg.pinv(A),B)
+        
+        max_norm = -inf
+        
+        for i in range(len(C)):
+            ps, tr, tc, cr, cc = state_decoder[i]
+            delta = max(delta, abs(MDP.V[ps][tr][tc][cr][cc] - C[i]))
+            MDP.V[ps][tr][tc][cr][cc] = C[i]
+            if V_opt != None:
+                max_norm = max(max_norm, abs(MDP.V[ps][tr][tc][cr][cc] - V_opt[ps][tr][tc][cr][cc]))
+        
+        if V_opt != None:
+            data.append(max_norm)
+            
+        
+        # Policy Improvement
+        for ps in range(2):
+            for tr in range(MDP.rows):
+                for tc in range(MDP.cols):
+                    for cr in range(MDP.rows):
+                        for cc in range(MDP.cols):
+                            if not MDP.grid[ps][tr][tc][cr][cc]:
+                                continue
+                            if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
+                                continue
+                            best_action = new_policy(MDP, params, ps, tr, tc, cr, cc)
+                            if best_action != MDP.policy[ps][tr][tc][cr][cc]:
+                                if iteration > 1:
+                                    dwn=1
+                                    # print(ps, tr, tc, cr, cc, MDP.policy[ps][tr][tc][cr][cc], best_action, MDP.V[ps][tr][tc][cr][cc])
+                                MDP.policy[ps][tr][tc][cr][cc] = best_action
+                                converged = False
+                                
+        
+        print("Iteration:{}, Delta:{}".format(iteration, delta))
+
+        if plotting == True and iteration == 10:
+            break
+        elif plotting == False and (delta <= params['discountedEpsilon'] or converged):
+            break
+    
+    print("\nConverged\nDiscount:{}, Iterations:{}, Max-Norm:{}".format(params['discount'], iteration, delta))
+    print("Passenger:({},{})".format(
+        MDP.passenger[0], MDP.passenger[1]))
+    print("Destination:({},{})".format(MDP.dest[0], MDP.dest[1]))
+    print("Taxi:({},{})".format(MDP.taxi[0], MDP.taxi[1]))
+
+    tr, tc = MDP.taxi[0], MDP.taxi[1]
+    cr, cc = MDP.passenger[0], MDP.passenger[1]
+
+    action = ''
+    picked = False
+    step   = 0
+
+    while not (tr == MDP.dest[0] and tc == MDP.dest[1] and picked == False and cr == tr and cc == tc) and step < 500:
+        if not picked:
+            action = MDP.policy[0][tr][tc][cr][cc]
+        else:
+            action = MDP.policy[1][tr][tc][tr][tc]
+        ret = MDP.simulate(picked, tr, tc, cr, cc, action)
+        (picked, tr, tc, cr, cc) = ret["state"]
+        reward = ret["r"]
+        step += 1
+        # print(action, ret)
+        # time.sleep(0.1)
+    
+    if V_opt != None:
+        return data
+    
+    return MDP.V
+
+def policy_loss(MDP_params, params):
+    discount_list = {0.01:[], 0.1:[], 0.5:[], 0.8:[], 0.99:[]}
+    for discount in discount_list:
+        params["discount"] = discount
+        V_opt = policy_iteration_iterative(MDP_params, params, plotting=True)
+        discount_list[discount] = np.asarray(policy_iteration_iterative(MDP_params, params, plotting=True, V_opt=V_opt))
+        
+        # V_opt = policy_iteration_linear_algebra(MDP_params, params, plotting=True)
+        # discount_list[discount] = np.asarray(policy_iteration_linear_algebra(MDP_params, params, plotting=True, V_opt=V_opt))
+        
+        discount_list[discount] = discount_list[discount] / max(discount_list[discount])
+    
+    plt.figure(figsize=(10, 6))
+    plt.title('Policy Loss vs Convergence')
+    plt.xlabel('Iterations')
+    plt.ylabel('Policy Loss')
+    
+    for discount in discount_list:
+        if len(discount_list[discount]) == 0: continue
+        x = np.arange(1,len(discount_list[discount])+1)
+        plt.plot(x, discount_list[discount], label='discount='+str(discount))
+        
+    plt.legend()
+    plt.savefig('output/policy_loss.jpg')
+    plt.show()
+    
+    # policy_loss_plot(data)
 
 def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.1, decay=False):
     MDP = MarkovDecisionProblem(params)
@@ -522,7 +708,6 @@ def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.
     #     print(best_action, ret)
     #     input()
 
-
 if __name__ == '__main__':
 
     params = {
@@ -539,16 +724,14 @@ if __name__ == '__main__':
         'epsilon': 1e-6,
         'success_prob': 0.85
     }
-
-    # MDP = MarkovDecisionProblem(params=params)
     
     # value_iteration(params, value_iter_params)
-    # discount_vs_iteration(params, value_iter_params)
+    discount_vs_iteration(params, value_iter_params)
+    # value_iter_partc(params, value_iter_params)
     
     # policy_iteration_iterative(params, value_iter_params)
     # policy_iteration_linear_algebra(params, value_iter_params)
+    # policy_loss(params, value_iter_params)
     
-    q_learning(params, 2000, 0.25, 0.99, 0.1, False)
-    
-    
-    
+    # q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+
