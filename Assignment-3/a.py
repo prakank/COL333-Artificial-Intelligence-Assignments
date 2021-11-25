@@ -514,31 +514,47 @@ def sarsa(params, episodes, learning_rate, discount, epsilon_exploration=0.1, de
 
 
 def make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay):
+    plt.figure(figsize=(10, 6))
+    plt.title('Rewards vs Iterations for different algorithms')
+    plt.xlabel('Iterations')
+    plt.ylabel('Rewards')
+
     x, y = zip(*rewards_Q)
-    plt.plot(x, y)
+    plt.plot(x, y, label='Q-learning')
     x, y = zip(*rewards_Q_decay)
-    plt.plot(x, y)
+    plt.plot(x, y, label='Q-learning with decaying exploration')
     x, y = zip(*rewards_sarsa)
-    plt.plot(x, y)
+    plt.plot(x, y, label='SARSA')
     x, y = zip(*rewards_sarsa_decay)
-    plt.plot(x, y)
-    plt.ylabel('some numbers')
+    plt.plot(x, y, label='SARSA with decaying exploration')
+    plt.legend()
+    plt.savefig('plot_B2.jpg')
+    # plt.show()
+
+
+def make_plot_3_eps(epsilons, rewards):
+    plt.figure(figsize=(10, 6))
+    plt.title('Rewards vs Iterations(varying exploration)')
+    plt.xlabel('Iterations')
+    plt.ylabel('Rewards')
+    for i in range(len(rewards)):
+        x, y = zip(*rewards[i])
+        plt.plot(x, y, label='epsilon='+str(epsilons[i]))
+    plt.legend()
+    plt.savefig('plot_B4e.jpg')
     plt.show()
 
 
-def make_plot_3_eps(rewards):
-    for rew in rewards:
-        x, y = zip(*rew)
-        plt.plot(x, y)
-    plt.ylabel('some numbers')
-    plt.show()
-
-
-def make_plot_3_alpha(rewards):
-    for rew in rewards:
-        x, y = zip(*rew)
-        plt.plot(x, y)
-    plt.ylabel('some numbers')
+def make_plot_3_alpha(alphas, rewards):
+    plt.figure(figsize=(10, 6))
+    plt.title('Rewards vs Iterations(varying learning rate)')
+    plt.xlabel('Iterations')
+    plt.ylabel('Rewards')
+    for i in range(len(rewards)):
+        x, y = zip(*rewards[i])
+        plt.plot(x, y, label='alpha='+str(alphas[i]))
+    plt.legend()
+    plt.savefig('plot_B4a.jpg')
     plt.show()
 
 
@@ -560,21 +576,21 @@ if __name__ == '__main__':
     }
 
     MDP = MarkovDecisionProblem(params=params)
-    # rewards_Q = q_learning(params, 2000, 0.25, 0.99, 0.1, False)
-    # rewards_Q_decay = q_learning(params, 2000, 0.25, 0.99, 0.1, True)
-    # rewards_sarsa = sarsa(params, 2000, 0.25, 0.99, 0.1, False)
-    # rewards_sarsa_decay = sarsa(params, 2000, 0.25, 0.99, 0.1, True)
+    rewards_Q = q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+    rewards_Q_decay = q_learning(params, 2000, 0.25, 0.99, 0.1, True)
+    rewards_sarsa = sarsa(params, 2000, 0.25, 0.99, 0.1, False)
+    rewards_sarsa_decay = sarsa(params, 2000, 0.25, 0.99, 0.1, True)
     eps_vals = [0, 0.05, 0.1, 0.5, 0.9]
     alpha_vals = [0.1, 0.2, 0.3, 0.4, 0.5]
     rewards_eps = []
     rewards_alpha = []
-    # for eps in eps_vals:
-    #     rewards_eps.append(q_learning(params, 2000, 0.1, 0.99, eps, False))
+    for eps in eps_vals:
+        rewards_eps.append(q_learning(params, 2000, 0.1, 0.99, eps, False))
 
     for alpha in alpha_vals:
         rewards_alpha.append(q_learning(params, 2000, alpha, 0.99, 0.1, False))
 
-    # make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay)
-    # make_plot_3_eps(rewards_eps)
-    make_plot_3_alpha(rewards_alpha)
+    make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay)
+    make_plot_3_eps(eps_vals, rewards_eps)
+    make_plot_3_alpha(alpha_vals, rewards_alpha)
     # value_iteration(MDP, value_iter_params)
