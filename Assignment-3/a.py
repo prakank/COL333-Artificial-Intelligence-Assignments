@@ -167,10 +167,33 @@ class MarkovDecisionProblem:
         self.Yloc = (4, 0)
         self.Bloc = (4, 3)
 
+    def generate_hard(self):
+        rows, cols = self.rows, self.cols
+
+        wall_start = [[0, 2], [2, 5], [0, 7], [6, 0], [6, 3], [6, 7]]
+
+        for ps in range(2):
+            for cr in range(rows):
+                for cc in range(cols):
+                    for w in wall_start:
+                        for i in range(4):
+                            x = w[0]+i
+                            y = w[1]
+                            self.grid[ps][x][y][cr][cc].change_weights(x, y+1)
+                            self.grid[ps][x][y+1][cr][cc].change_weights(x, y)
+
+        self.Rloc = (0, 0)
+        self.Gloc = (0, 5)
+        self.Cloc = (0, 8)
+        self.Wloc = (3, 3)
+        self.Mloc = (4, 6)
+        self.Yloc = (8, 0)
+        self.Bloc = (9, 4)
+        self.Ploc = (9, 9)
+
     def simulate(self, ps, tr, tc, cr, cc, action):
         r = random.random()
-        # print(r)
-        for trans in MDP.grid[ps][tr][tc][cr][cc].transitions[action]:
+        for trans in self.grid[ps][tr][tc][cr][cc].transitions[action]:
             if trans["p"] == 0:
                 continue
             else:
@@ -363,6 +386,6 @@ if __name__ == '__main__':
     }
 
     MDP = MarkovDecisionProblem(params=params)
-    q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+    # q_learning(params, 2000, 0.25, 0.99, 0.1, False)
 
-    # value_iteration(MDP, value_iter_params)
+    value_iteration(MDP, value_iter_params)
