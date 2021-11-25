@@ -1,7 +1,9 @@
 import json
+from math import inf
 import random
 import copy
 import random
+inf = 1000000000
 
 
 class MarkovDecisionProblem:
@@ -159,6 +161,8 @@ class MarkovDecisionProblem:
         # self.grid[0][self.dest[0]][self.dest[1]][self.dest[0]][self.dest[1]]
         self.grid[1][self.dest[0]][self.dest[1]][self.dest[0]
                                                  ][self.dest[1]].transitions["D"][0]["r"] = 20
+        self.grid[0][self.dest[0]][self.dest[1]][self.dest[0]
+                                                 ][self.dest[1]].transitions = {}
 
     def utilityValue(self, ps, tr, tc, cr, cc):
         val = -float('inf')
@@ -189,13 +193,14 @@ class MarkovDecisionProblem:
         while True:
             iteration += 1
             delta = 0.0
-
             for ps in range(2):
                 for tr in range(self.rows):
                     for tc in range(self.cols):
                         for cr in range(self.rows):
                             for cc in range(self.cols):
                                 if not self.grid[ps][tr][tc][cr][cc]:
+                                    continue
+                                if self.grid[ps][tr][tc][cr][cc].transitions == {}:
                                     continue
                                 self.V_temp[ps][tr][tc][cr][cc], action = self.utilityValue(
                                     ps, tr, tc, cr, cc)
@@ -223,7 +228,7 @@ class MarkovDecisionProblem:
         action = ''
         picked = False
 
-        while not (tr == self.dest[0] and tc == self.dest[1] and picked == False):
+        while not (tr == self.dest[0] and tc == self.dest[1] and picked == False and cr == tr and cc == tc):
             if not picked:
                 action = self.policy[0][tr][tc][cr][cc]
             else:
@@ -264,8 +269,41 @@ class MarkovDecisionProblem:
                 r -= trans["p"]
             if r < 0:
                 return trans
+        return None
+
+
+def q_learning(MDP, episodes, learning_rate, epsilon_exploration=0.1, decay=False):
+    iter = 0
+    Q = [[[[[[0.0 for x in MDP.actions]for i1 in range(MDP.cols)]
+            for j1 in range(MDP.rows)] for i2 in range(MDP.cols)] for j2 in range(MDP.rows)]for k in range(2)]
+    # for ps in 2:
+    #     for tr in range(MDP.rows):
+    #         for tc in range(MDP.cols):
+    #             for cr in range(MDP.rows):
+    #                 for cc in range(MDP.cols):
+    #                     for action in MDP.actions:
+
+    for iter in range(episodes):
+        best = -inf
+        best_action = ""
+        ps, tr, tc, cr, cc = 0
+        # select best action
+        for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
+            if Q[ps][tr][tc][cr][cc][action] > best:
+                best = Q[ps][tr][tc][cr][cc][action]
+                best_action = action
+        r = random.random()
+        if r < 0.9:
+            selected_action = best_action
+        else:
+            random_action_idx = random.randint(
+                0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
+            selected_action = MDP.grid[ps][tr][tc][cr][cc].transitions
+
+        # perform selected action
+        MDP.simulate(ps, tr, tc, cr, cc, selected_action)
 
 
 if __name__ == '__main__':
-    MDP = MarkovDecisionProblem(0.9, 1e-2, 0.85, 'easy')
+    MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy')
     MDP.value_iteration()
