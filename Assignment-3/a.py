@@ -286,12 +286,7 @@ def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.
 
     Q = [[[[[[0.0 for x in MDP.possibleActions]for i1 in range(MDP.cols)]
             for j1 in range(MDP.rows)] for i2 in range(MDP.cols)] for j2 in range(MDP.rows)]for k in range(2)]
-    # for ps in 2:
-    #     for tr in range(MDP.rows):
-    #         for tc in range(MDP.cols):
-    #             for cr in range(MDP.rows):
-    #                 for cc in range(MDP.cols):
-    #                     for action in MDP.actions:
+
     map = {
         "N": 0,
         "S": 1,
@@ -325,22 +320,24 @@ def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.
             best = -inf
             best_action = ""
 
-            # select best action
+            # find best action for greedy
             for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
                 if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
                     best = Q[ps][tr][tc][cr][cc][map[action]]
                     best_action = action
+
             r = random.random()
             if r < epsilon_exploration:
+                # EXPLORE
                 random_action_idx = random.randint(
                     0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
                 selected_action = list(MDP.grid[ps][tr][tc][cr][cc].transitions.keys())[
                     random_action_idx]
             else:
+                # GREEDY
                 selected_action = best_action
 
             # perform selected action
-            # print("Step:", step, ps, tr, tc, cr, cc, selected_action)
             ret = MDP.simulate(ps, tr, tc, cr, cc, selected_action)
 
             # learn
@@ -349,23 +346,39 @@ def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.
             best_action = ""
             for action in MDP.grid[nps][ntr][ntc][ncr][ncc].transitions:
                 if Q[nps][ntr][ntc][ncr][ncc][map[action]] > next_state_max_Q or best_action == "":
-                    next_state_max_Q = Q[ps][tr][tc][cr][cc][map[action]]
+                    next_state_max_Q = Q[nps][ntr][ntc][ncr][ncc][map[action]]
                     best_action = action
             if MDP.check_terminal(nps, ntr, ntc, ncr, ncc):
                 next_state_max_Q = 0
 
             Q[ps][tr][tc][cr][cc][map[selected_action]] = (
                 1-learning_rate)*Q[ps][tr][tc][cr][cc][map[selected_action]] + learning_rate * (ret["r"] + discount * next_state_max_Q)
-            ps, tr, tc, cr, cc = ret["state"]
 
+            ps, tr, tc, cr, cc = ret["state"]
             if MDP.check_terminal(ps, tr, tc, cr, cc):
-                # print(step)
+                print(step)
                 break
-            # print(Q[1][4][0][4][0])
-            # input()
-        if step != 499:
-            print(step)
-            time.sleep(0.1)
+
+    # tr, tc = MDP.taxi[0], MDP.taxi[1]
+    # cr, cc = MDP.passenger[0], MDP.passenger[1]
+
+    # action = ''
+    # picked = False
+
+    # while not (tr == MDP.dest[0] and tc == MDP.dest[1] and ps == 0 and cr == tr and cc == tc):
+    #     best = -inf
+    #     best_action = ""
+    #     # select best action
+    #     for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
+    #         if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
+    #             best = Q[ps][tr][tc][cr][cc][map[action]]
+    #             best_action = action
+
+    #     ret = MDP.simulate(picked, tr, tc, cr, cc, best_action)
+    #     (picked, tr, tc, cr, cc) = ret["state"]
+    #     reward = ret["r"]
+    #     print(best_action, ret)
+    #     input()
 
 
 if __name__ == '__main__':
@@ -386,6 +399,6 @@ if __name__ == '__main__':
     }
 
     MDP = MarkovDecisionProblem(params=params)
-    # q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+    q_learning(params, 2000, 0.25, 0.99, 0.1, False)
 
-    value_iteration(MDP, value_iter_params)
+    # value_iteration(MDP, value_iter_params)
