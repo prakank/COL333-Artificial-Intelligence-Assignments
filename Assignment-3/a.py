@@ -1,6 +1,7 @@
 import json
 import random
 import copy
+import random
 
 
 class MarkovDecisionProblem:
@@ -227,39 +228,42 @@ class MarkovDecisionProblem:
                 action = self.policy[0][tr][tc][cr][cc]
             else:
                 action = self.policy[1][tr][tc][tr][tc]
-            print(tr, tc, picked, action, "Dest", self.dest)
-            if action == 'U' and tr == self.passenger[0] and tc == self.passenger[1]:
-                picked = True
-            elif action == 'N':
-                tr -= 1
-            elif action == 'E':
-                tc += 1
-            elif action == 'S':
-                tr += 1
-            elif action == 'W':
-                tc -= 1
-            elif action == "D":
-                picked = False
-                # for r in range(self.rows):
-                #     for c in range(self.cols):
-                #         # print(round(self.utility[r][c], 3), end=" ")
-                #         action = self.policy[r][c]
-                #         direction = ""
-                #         if action == 0:
-                #             direction = "↑"
-                #         elif action == 1:
-                #             direction = "→"
-                #         elif action == 2:
-                #             direction = "↓"
-                #         elif action == 3:
-                #             direction = "←"
-                #         elif action == 4:
-                #             direction = "Pick"
-                #         elif action == 5:
-                #             direction = "Putdown"
-                #         else:
-                #             direction = "Error"
-                #         print(direction, end=" ")
+            ret = self.simulate(picked, tr, tc, cr, cc, action)
+            (picked, tr, tc, cr, cc) = ret["state"]
+            reward = ret["r"]
+            print(action, ret)
+
+            # for r in range(self.rows):
+            #     for c in range(self.cols):
+            #         # print(round(self.utility[r][c], 3), end=" ")
+            #         action = self.policy[r][c]
+            #         direction = ""
+            #         if action == 0:
+            #             direction = "↑"
+            #         elif action == 1:
+            #             direction = "→"
+            #         elif action == 2:
+            #             direction = "↓"
+            #         elif action == 3:
+            #             direction = "←"
+            #         elif action == 4:
+            #             direction = "Pick"
+            #         elif action == 5:
+            #             direction = "Putdown"
+            #         else:
+            #             direction = "Error"
+            #         print(direction, end=" ")
+
+    def simulate(self, ps, tr, tc, cr, cc, action):
+        r = random.random()
+        # print(r)
+        for trans in self.grid[ps][tr][tc][cr][cc].transitions[action]:
+            if trans["p"] == 0:
+                continue
+            else:
+                r -= trans["p"]
+            if r < 0:
+                return trans
 
 
 if __name__ == '__main__':
