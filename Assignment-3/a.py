@@ -48,12 +48,8 @@ class MarkovDecisionProblem:
                         self.transitions[action][0]["p"] += self.transitions[action][i]["p"]
                         self.transitions[action][i]["p"] = 0
 
-    def __init__(self, discount, epsilon, success_prob, params):
+    def __init__(self, params):
         self.possibleActions = ["N", "S", "W", "E", "U", "D"]
-        self.discount = discount
-        self.epsilon = epsilon
-        self.discountedEpsilon = epsilon*(1-discount)/discount
-        self.success_prob = success_prob
         self.passengerPicked = False
         self.gridType = params['gridType']
         self.generate(params)
@@ -162,30 +158,31 @@ class MarkovDecisionProblem:
         self.Bloc = (4, 3)
         
 
-def utilityValue(MDP, ps, tr, tc, cr, cc):
+def utilityValue(MDP, params, ps, tr, tc, cr, cc):
     val = -float('inf')
     bestAction = -1
 
     for i in MDP.grid[ps][tr][tc][cr][cc].transitions:  # Number of actions
-        temp = Q_Value(MDP,ps, tr, tc, cr, cc, i)
+        temp = Q_Value(MDP, params, ps, tr, tc, cr, cc, i)
         if temp > val:
             val = temp
             bestAction = i
 
     return val, bestAction
 
-def Q_Value(MDP, ps, tr, tc, cr, cc, action):
+def Q_Value(MDP, params, ps, tr, tc, cr, cc, action):
     node = MDP.grid[ps][tr][tc][cr][cc]
     q = 0
     for trans in node.transitions[action]:
         nps, ntr, ntc, ncr, ncc = trans["state"]
         if trans["p"] != 0:
-            q += (trans["p"] * (trans["r"] + MDP.discount *
+            q += (trans["p"] * (trans["r"] + params['discount'] *
                     MDP.V[nps][ntr][ntc][ncr][ncc]))
     return q
 
-def value_iteration(MDP):
+def value_iteration(MDP, params):
     iteration = 0
+    params['discountedEpsilon'] = params['epsilon']*(1-params['discount'])/params['discount']
 
     while True:
         iteration += 1
@@ -199,7 +196,7 @@ def value_iteration(MDP):
                                 continue
                             if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
                                 continue
-                            MDP.V_temp[ps][tr][tc][cr][cc], action = utilityValue(MDP,ps, tr, tc, cr, cc)
+                            MDP.V_temp[ps][tr][tc][cr][cc], action = utilityValue(MDP, params, ps, tr, tc, cr, cc)
                             MDP.policy[ps][tr][tc][cr][cc] = action
 
                             delta = max(delta, abs(
@@ -209,7 +206,7 @@ def value_iteration(MDP):
 
         print("Iteration:{}, Delta:{}".format(iteration, delta))
 
-        if delta <= MDP.discountedEpsilon:
+        if delta <= params['discountedEpsilon']:
             break
 
     print("\nConverged\nIterations:{}, Max-Norm:{}".format(iteration, delta))
@@ -245,7 +242,6 @@ def simulate(MDP, ps, tr, tc, cr, cc, action):
         if r < 0:
             return trans
     return None
-
 
 def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, decay=False):
     Q = [[[[[[0.0 for x in MDP.possibleActions]for i1 in range(MDP.cols)]
@@ -322,5 +318,11 @@ if __name__ == '__main__':
         'taxi': (1,4)
     }
     
-    MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, params=params)
-    value_iteration(MDP)
+    value_iter_params = {
+        'discount' : 0.9,
+        'epsilon': 1e-6,
+        'success_prob': 0.85
+    }
+    
+    MDP = MarkovDecisionProblem(params=params)
+    value_iteration(MDP, value_iter_params)
