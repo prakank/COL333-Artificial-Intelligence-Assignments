@@ -53,7 +53,13 @@ class MarkovDecisionProblem:
         self.passengerPicked = False
         self.gridType = params['gridType']
         self.generate(params)
-    
+
+    def check_terminal(self, ps, tr, tc, cr, cc):
+        if ps == 0 and tr == cr and tc == cc and tr == self.dest[0] and tc == self.dest[1]:
+            return True
+        else:
+            return False
+
     def generate(self, params):
         self.rows = rows = params['rows']
         self.cols = cols = params['cols']
@@ -85,20 +91,20 @@ class MarkovDecisionProblem:
                                 node.change_weights(tr, tc+1)
                             grid[ps][tr][tc][cr][cc] = node
         self.grid = grid
-        
+
         if self.gridType == 'easy':
             self.generate_easy()
         else:
             self.generate_hard()
-        
+
         for tr in range(rows):
             for tc in range(cols):
                 for cr in range(rows):
                     for cc in range(cols):
                         if tr != cr or tc != cc:
                             self.grid[1][tr][tc][cr][cc] = None
-        
-        if 'passenger' in params:            
+
+        if 'passenger' in params:
             self.passenger = params['passenger']
             self.dest = params['dest']
             self.taxi = params['taxi']
@@ -113,24 +119,28 @@ class MarkovDecisionProblem:
             self.taxi = taxi
 
             def depot(x):
-                if x == 1: loc = self.Rloc
-                elif x == 2: loc = self.Gloc
-                elif x == 3: loc = self.Yloc
-                else: loc = self.Bloc
+                if x == 1:
+                    loc = self.Rloc
+                elif x == 2:
+                    loc = self.Gloc
+                elif x == 3:
+                    loc = self.Yloc
+                else:
+                    loc = self.Bloc
                 return loc
 
             self.passenger = depot(passenger)
             self.dest = depot(dest)
-        
+
         self.grid[1][self.dest[0]][self.dest[1]][self.dest[0]
                                                  ][self.dest[1]].transitions["D"][0]["r"] = 20
         self.grid[0][self.dest[0]][self.dest[1]][self.dest[0]
                                                  ][self.dest[1]].transitions = {}
-                            
-    def generate_easy(self):        
+
+    def generate_easy(self):
         # Walls
         rows, cols = self.rows, self.cols
-        
+
         for ps in range(2):
             for cr in range(rows):
                 for cc in range(cols):
@@ -151,12 +161,24 @@ class MarkovDecisionProblem:
 
                     self.grid[ps][4][2][cr][cc].change_weights(4, 3)
                     self.grid[ps][4][3][cr][cc].change_weights(4, 2)
-        
+
         self.Rloc = (0, 0)
         self.Gloc = (0, 4)
         self.Yloc = (4, 0)
         self.Bloc = (4, 3)
-        
+
+    def simulate(self, ps, tr, tc, cr, cc, action):
+        r = random.random()
+        # print(r)
+        for trans in MDP.grid[ps][tr][tc][cr][cc].transitions[action]:
+            if trans["p"] == 0:
+                continue
+            else:
+                r -= trans["p"]
+            if r < 0:
+                return trans
+        return None
+
 
 def utilityValue(MDP, params, ps, tr, tc, cr, cc):
     val = -float('inf')
@@ -170,6 +192,7 @@ def utilityValue(MDP, params, ps, tr, tc, cr, cc):
 
     return val, bestAction
 
+
 def Q_Value(MDP, params, ps, tr, tc, cr, cc, action):
     node = MDP.grid[ps][tr][tc][cr][cc]
     q = 0
@@ -177,12 +200,14 @@ def Q_Value(MDP, params, ps, tr, tc, cr, cc, action):
         nps, ntr, ntc, ncr, ncc = trans["state"]
         if trans["p"] != 0:
             q += (trans["p"] * (trans["r"] + params['discount'] *
-                    MDP.V[nps][ntr][ntc][ncr][ncc]))
+                                MDP.V[nps][ntr][ntc][ncr][ncc]))
     return q
+
 
 def value_iteration(MDP, params):
     iteration = 0
-    params['discountedEpsilon'] = params['epsilon']*(1-params['discount'])/params['discount']
+    params['discountedEpsilon'] = params['epsilon'] * \
+        (1-params['discount'])/params['discount']
 
     while True:
         iteration += 1
@@ -196,7 +221,8 @@ def value_iteration(MDP, params):
                                 continue
                             if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
                                 continue
-                            MDP.V_temp[ps][tr][tc][cr][cc], action = utilityValue(MDP, params, ps, tr, tc, cr, cc)
+                            MDP.V_temp[ps][tr][tc][cr][cc], action = utilityValue(
+                                MDP, params, ps, tr, tc, cr, cc)
                             MDP.policy[ps][tr][tc][cr][cc] = action
 
                             delta = max(delta, abs(
@@ -226,24 +252,15 @@ def value_iteration(MDP, params):
             action = MDP.policy[0][tr][tc][cr][cc]
         else:
             action = MDP.policy[1][tr][tc][tr][tc]
-        ret = simulate(MDP,picked, tr, tc, cr, cc, action)
+        ret = MDP.simulate(picked, tr, tc, cr, cc, action)
         (picked, tr, tc, cr, cc) = ret["state"]
         reward = ret["r"]
         print(action, ret)
 
-def simulate(MDP, ps, tr, tc, cr, cc, action):
-    r = random.random()
-    # print(r)
-    for trans in MDP.grid[ps][tr][tc][cr][cc].transitions[action]:
-        if trans["p"] == 0:
-            continue
-        else:
-            r -= trans["p"]
-        if r < 0:
-            return trans
-    return None
 
-def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, decay=False):
+def q_learning(params, episodes, learning_rate, discount, epsilon_exploration=0.1, decay=False):
+    MDP = MarkovDecisionProblem(params)
+
     Q = [[[[[[0.0 for x in MDP.possibleActions]for i1 in range(MDP.cols)]
             for j1 in range(MDP.rows)] for i2 in range(MDP.cols)] for j2 in range(MDP.rows)]for k in range(2)]
     # for ps in 2:
@@ -260,17 +277,34 @@ def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, 
         "U": 4,
         "D": 5
     }
+
     for iter in range(episodes):
-        MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy')
-        ps, tr, tc, cr, cc = 0, MDP.taxi[0], MDP.taxi[0], MDP.passenger[0], MDP.passenger[1]
+        passenger = MDP.dest
+        while(MDP.dest == passenger):
+            def depot(x):
+                if x == 1:
+                    loc = MDP.Rloc
+                elif x == 2:
+                    loc = MDP.Gloc
+                elif x == 3:
+                    loc = MDP.Yloc
+                else:
+                    loc = MDP.Bloc
+                return loc
+            passenger = random.randrange(1, 5)
+            passenger = depot(passenger)
+
+        ps, tr, tc, cr, cc = 0, random.randrange(
+            0, 5), random.randrange(0, 5), passenger[0], passenger[1]
         print("Starting new episode", iter, ps, tr, tc, cr, cc)
+
         for step in range(500):
             best = -inf
             best_action = ""
 
             # select best action
             for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
-                if Q[ps][tr][tc][cr][cc][map[action]] > best:
+                if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
                     best = Q[ps][tr][tc][cr][cc][map[action]]
                     best_action = action
             r = random.random()
@@ -283,46 +317,52 @@ def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, 
                 selected_action = best_action
 
             # perform selected action
+            # print("Step:", step, ps, tr, tc, cr, cc, selected_action)
             ret = MDP.simulate(ps, tr, tc, cr, cc, selected_action)
 
             # learn
             nps, ntr, ntc, ncr, ncc = ret["state"]
             next_state_max_Q = -inf
+            best_action = ""
             for action in MDP.grid[nps][ntr][ntc][ncr][ncc].transitions:
-                if Q[nps][ntr][ntc][ncr][ncc][map[action]] > best:
+                if Q[nps][ntr][ntc][ncr][ncc][map[action]] > next_state_max_Q or best_action == "":
                     next_state_max_Q = Q[ps][tr][tc][cr][cc][map[action]]
                     best_action = action
-            if MDP.check_terminal(ps, tr, tc, cr, cc):
+            if MDP.check_terminal(nps, ntr, ntc, ncr, ncc):
                 next_state_max_Q = 0
 
             Q[ps][tr][tc][cr][cc][map[selected_action]] = (
                 1-learning_rate)*Q[ps][tr][tc][cr][cc][map[selected_action]] + learning_rate * (ret["r"] + discount * next_state_max_Q)
             ps, tr, tc, cr, cc = ret["state"]
-            # print("Step:", step, ps, tr, tc, cr, cc)
+
             if MDP.check_terminal(ps, tr, tc, cr, cc):
-                print(step)
+                # print(step)
                 break
+            # print(Q[1][4][0][4][0])
+            # input()
         if step != 499:
             print(step)
-            time.sleep(2)
+            time.sleep(0.1)
 
 
 if __name__ == '__main__':
-    
+
     params = {
         'gridType': 'easy',
         'rows': 5,
         'cols': 5,
-        'passenger': (4,3),
-        'dest': (4,0),
-        'taxi': (1,4)
+        'passenger': (4, 3),
+        'dest': (4, 0),
+        'taxi': (1, 4)
     }
-    
+
     value_iter_params = {
-        'discount' : 0.9,
+        'discount': 0.9,
         'epsilon': 1e-6,
         'success_prob': 0.85
     }
-    
+
     MDP = MarkovDecisionProblem(params=params)
-    value_iteration(MDP, value_iter_params)
+    q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+
+    # value_iteration(MDP, value_iter_params)
