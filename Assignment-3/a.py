@@ -3,6 +3,7 @@ from math import inf
 import random
 import copy
 import random
+import time
 inf = 1000000000
 
 
@@ -59,6 +60,12 @@ class MarkovDecisionProblem:
             self.generate_easy()
         elif gridType == 'hard':
             self.generate_hard()
+
+    def check_terminal(self, ps, tr, tc, cr, cc):
+        if ps == 0 and tr == cr and tc == cc and tr == self.dest[0] and tc == self.dest[1]:
+            return True
+        else:
+            return False
 
     def generate_easy(self):
         # 5*5 matrix
@@ -272,9 +279,8 @@ class MarkovDecisionProblem:
         return None
 
 
-def q_learning(MDP, episodes, learning_rate, epsilon_exploration=0.1, decay=False):
-    iter = 0
-    Q = [[[[[[0.0 for x in MDP.actions]for i1 in range(MDP.cols)]
+def q_learning(MDP, episodes, learning_rate, discount, epsilon_exploration=0.1, decay=False):
+    Q = [[[[[[0.0 for x in MDP.possibleActions]for i1 in range(MDP.cols)]
             for j1 in range(MDP.rows)] for i2 in range(MDP.cols)] for j2 in range(MDP.rows)]for k in range(2)]
     # for ps in 2:
     #     for tr in range(MDP.rows):
@@ -282,28 +288,62 @@ def q_learning(MDP, episodes, learning_rate, epsilon_exploration=0.1, decay=Fals
     #             for cr in range(MDP.rows):
     #                 for cc in range(MDP.cols):
     #                     for action in MDP.actions:
-
+    map = {
+        "N": 0,
+        "S": 1,
+        "W": 2,
+        "E": 3,
+        "U": 4,
+        "D": 5
+    }
     for iter in range(episodes):
-        best = -inf
-        best_action = ""
-        ps, tr, tc, cr, cc = 0
-        # select best action
-        for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
-            if Q[ps][tr][tc][cr][cc][action] > best:
-                best = Q[ps][tr][tc][cr][cc][action]
-                best_action = action
-        r = random.random()
-        if r < 0.9:
-            selected_action = best_action
-        else:
-            random_action_idx = random.randint(
-                0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
-            selected_action = MDP.grid[ps][tr][tc][cr][cc].transitions
+        MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy')
+        ps, tr, tc, cr, cc = 0, MDP.taxi[0], MDP.taxi[0], MDP.passenger[0], MDP.passenger[1]
+        print("Starting new episode", iter, ps, tr, tc, cr, cc)
+        for step in range(500):
+            best = -inf
+            best_action = ""
 
-        # perform selected action
-        MDP.simulate(ps, tr, tc, cr, cc, selected_action)
+            # select best action
+            for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
+                if Q[ps][tr][tc][cr][cc][map[action]] > best:
+                    best = Q[ps][tr][tc][cr][cc][map[action]]
+                    best_action = action
+            r = random.random()
+            if r < epsilon_exploration:
+                random_action_idx = random.randint(
+                    0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
+                selected_action = list(MDP.grid[ps][tr][tc][cr][cc].transitions.keys())[
+                    random_action_idx]
+            else:
+                selected_action = best_action
+
+            # perform selected action
+            ret = MDP.simulate(ps, tr, tc, cr, cc, selected_action)
+
+            # learn
+            nps, ntr, ntc, ncr, ncc = ret["state"]
+            next_state_max_Q = -inf
+            for action in MDP.grid[nps][ntr][ntc][ncr][ncc].transitions:
+                if Q[nps][ntr][ntc][ncr][ncc][map[action]] > best:
+                    next_state_max_Q = Q[ps][tr][tc][cr][cc][map[action]]
+                    best_action = action
+            if MDP.check_terminal(ps, tr, tc, cr, cc):
+                next_state_max_Q = 0
+
+            Q[ps][tr][tc][cr][cc][map[selected_action]] = (
+                1-learning_rate)*Q[ps][tr][tc][cr][cc][map[selected_action]] + learning_rate * (ret["r"] + discount * next_state_max_Q)
+            ps, tr, tc, cr, cc = ret["state"]
+            # print("Step:", step, ps, tr, tc, cr, cc)
+            if MDP.check_terminal(ps, tr, tc, cr, cc):
+                print(step)
+                break
+        if step != 499:
+            print(step)
+            time.sleep(2)
 
 
 if __name__ == '__main__':
     MDP = MarkovDecisionProblem(0.9, 1e-6, 0.85, 'easy')
-    MDP.value_iteration()
+    q_learning(MDP, 2000, 0.25, 0.99, 0.1, False)
+    # MDP.value_iteration()
