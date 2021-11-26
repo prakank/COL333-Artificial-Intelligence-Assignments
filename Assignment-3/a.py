@@ -383,8 +383,12 @@ def simulator(Q, MDP, discount):
     reward = 0.0
     step = 0
     print(f"Start state: ({ps}, {tr}, {tc}, {cr}, {cc})")
+
+    line_new = '{:>16}  {:>7}  {:>16}  {:>7}'.format(
+        'Current State', 'Action', 'Next State', 'Reward')
+    print(line_new)
     while (not MDP.check_terminal(ps, tr, tc, cr, cc)) and step <= 500:
-        print(f"State: ({ps}, {tr}, {tc}, {cr}, {cc})")
+        # print(f"State: ({ps}, {tr}, {tc}, {cr}, {cc})")
         step += 1
         best = -inf
         best_action = ""
@@ -393,13 +397,17 @@ def simulator(Q, MDP, discount):
             if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
                 best = Q[ps][tr][tc][cr][cc][map[action]]
                 best_action = action
-        print(f"Policy prescribes: {best_action}")
+        # print(f"Policy prescribes: {best_action}")
         ret = MDP.simulate(ps, tr, tc, cr, cc, best_action)
-        print(f"Reached state: {ret['state']}, reward: {ret['r']}")
+
+        print('{:>16}  {:>7}  {:>16}  {:>7}'.format(
+            str((ps, tr, tc, cr, cc)), best_action, str(ret["state"]), ret["r"]))
+
+        # print(f"Reached state: {ret['state']}, reward: {ret['r']}")
         (ps, tr, tc, cr, cc) = ret["state"]
         reward += ret["r"] * cumulative_discount
         cumulative_discount *= discount
-        print()
+        # print()
     print(f"Reward: {reward}")
 
 
@@ -530,34 +538,32 @@ def sarsa(params, episodes, learning_rate, discount, epsilon_exploration=0.1, de
         ps, tr, tc, cr, cc = 0, random.randrange(
             0, MDP.rows), random.randrange(0, MDP.cols), passenger[0], passenger[1]
         print("Starting new episode", iter, ps, tr, tc, cr, cc)
+        best = -inf
+        best_action = ""
+
+        # find best action for greedy
+        for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
+            if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
+                best = Q[ps][tr][tc][cr][cc][map[action]]
+                best_action = action
+        r = random.random()
+
+        if r < epsilon_exploration:
+            # EXPLORE
+            random_action_idx = random.randint(
+                0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
+            selected_action = list(MDP.grid[ps][tr][tc][cr][cc].transitions.keys())[
+                random_action_idx]
+        else:
+            # GREEDY
+            selected_action = best_action
 
         for step in range(1, 501):
             learning_updates += 1
-            best = -inf
-            best_action = ""
-
-            # find best action for greedy
-            for action in MDP.grid[ps][tr][tc][cr][cc].transitions:
-                if Q[ps][tr][tc][cr][cc][map[action]] > best or best_action == "":
-                    best = Q[ps][tr][tc][cr][cc][map[action]]
-                    best_action = action
-
-            r = random.random()
             if decay:
                 epsilon_exploration_corrected = epsilon_exploration/learning_updates
             else:
                 epsilon_exploration_corrected = epsilon_exploration
-
-            if r < epsilon_exploration_corrected:
-                # EXPLORE
-                random_action_idx = random.randint(
-                    0, len(MDP.grid[ps][tr][tc][cr][cc].transitions) - 1)
-                selected_action = list(MDP.grid[ps][tr][tc][cr][cc].transitions.keys())[
-                    random_action_idx]
-            else:
-                # GREEDY
-                selected_action = best_action
-
             # perform selected action
             ret = MDP.simulate(ps, tr, tc, cr, cc, selected_action)
 
@@ -590,7 +596,7 @@ def sarsa(params, episodes, learning_rate, discount, epsilon_exploration=0.1, de
                 1-learning_rate)*Q[ps][tr][tc][cr][cc][map[selected_action]] + learning_rate * (ret["r"] + discount * next_state_Q)
 
             ps, tr, tc, cr, cc = ret["state"]
-
+            selected_action = selected_action_next_state
             if MDP.check_terminal(ps, tr, tc, cr, cc):
                 # print(step)
                 break
@@ -607,7 +613,7 @@ def sarsa(params, episodes, learning_rate, discount, epsilon_exploration=0.1, de
 def make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay):
     plt.figure(figsize=(10, 6))
     plt.title('Rewards vs Iterations for different algorithms')
-    plt.xlabel('Iterations')
+    plt.xlabel('Number of Training Episodes')
     plt.ylabel('Rewards')
 
     x, y = zip(*rewards_Q)
@@ -620,18 +626,23 @@ def make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay):
     plt.plot(x, y, label='SARSA with decaying exploration')
     plt.legend()
     plt.savefig('plot_B2.jpg')
+    print(rewards_Q[-1])
+    print(rewards_Q_decay[-1])
+    print(rewards_sarsa[-1])
+    print(rewards_sarsa_decay[-1])
     # plt.show()
 
 
-def make_plot_5(rewards_Q_decay, dest_arr):
+def make_plot_5(rewards, dest_arr):
     plt.figure(figsize=(10, 6))
     plt.title('Rewards vs Iterations for different algorithms')
-    plt.xlabel('Iterations')
+    plt.xlabel('Number of Training Episodes')
     plt.ylabel('Rewards')
-    for i in range(5):
-        x, y = zip(*rewards_Q_decay[i])
+    for i in range(len(dest_arr)):
+        x, y = zip(*rewards[i])
         plt.plot(
             x, y, label="dest=("+str(dest_arr[i][0]) + "," + str(dest_arr[i][1])+")")
+        print(dest_arr[i], rewards[i][-1])
     plt.legend()
     plt.savefig('plot_B5.jpg')
     # plt.show()
@@ -640,7 +651,7 @@ def make_plot_5(rewards_Q_decay, dest_arr):
 def make_plot_3_eps(epsilons, rewards):
     plt.figure(figsize=(10, 6))
     plt.title('Rewards vs Iterations(varying exploration)')
-    plt.xlabel('Iterations')
+    plt.xlabel('Number of Training Episodes')
     plt.ylabel('Rewards')
     for i in range(len(rewards)):
         x, y = zip(*rewards[i])
@@ -653,7 +664,7 @@ def make_plot_3_eps(epsilons, rewards):
 def make_plot_3_alpha(alphas, rewards):
     plt.figure(figsize=(10, 6))
     plt.title('Rewards vs Iterations(varying learning rate)')
-    plt.xlabel('Iterations')
+    plt.xlabel('Number of Training Episodes')
     plt.ylabel('Rewards')
     for i in range(len(rewards)):
         x, y = zip(*rewards[i])
@@ -687,12 +698,12 @@ if __name__ == '__main__':
 
     MDP = MarkovDecisionProblem(params=params_easy)
     MDP10 = MarkovDecisionProblem(params=params_hard)
-    # Q_q, rewards_Q = q_learning(params_easy, 2000, 0.25, 0.99, 0.1, False)
-    # Q_q_decay, rewards_Q_decay = q_learning(
-    #     params_easy, 2000, 0.25, 0.99, 0.1, True)
-    # Q_sarsa, rewards_sarsa = sarsa(params_easy, 2000, 0.25, 0.99, 0.1, False)
-    # Q_sarsa_decay, rewards_sarsa_decay = sarsa(
-    #     params_easy, 2000, 0.25, 0.99, 0.1, True)
+    Q_q, rewards_Q = q_learning(params_easy, 2000, 0.25, 0.99, 0.1, False)
+    Q_q_decay, rewards_Q_decay = q_learning(
+        params_easy, 2000, 0.25, 0.99, 0.1, True)
+    Q_sarsa, rewards_sarsa = sarsa(params_easy, 2000, 0.25, 0.99, 0.1, False)
+    Q_sarsa_decay, rewards_sarsa_decay = sarsa(
+        params_easy, 2000, 0.25, 0.99, 0.1, True)
     # eps_vals = [0, 0.05, 0.1, 0.5, 0.9]
     # alpha_vals = [0.1, 0.2, 0.3, 0.4, 0.5]
     # rewards_eps = []
@@ -709,46 +720,54 @@ if __name__ == '__main__':
     # make_plot_3_eps(eps_vals, rewards_eps)
     # make_plot_3_alpha(alpha_vals, rewards_alpha)
 
-    # simulator(Q_q_decay, MDP, 0.99)
-    depot_arr = [1, 2, 3, 4, 5, 6, 7, 8]
+    # def B5():
+    #     depot_arr = [1, 2, 3, 4, 5, 6, 7, 8]
+    #     np.random.shuffle(depot_arr)
+    #     reward = 0.0
+    #     rewards_10 = []
+    #     dest_arr = []
+    #     for i in range(5):
+    #         def depot(x):
+    #             if x == 1:
+    #                 loc = MDP10.Rloc
+    #             elif x == 2:
+    #                 loc = MDP10.Gloc
+    #             elif x == 3:
+    #                 loc = MDP10.Yloc
+    #             elif x == 4:
+    #                 loc = MDP10.Bloc
+    #             elif x == 5:
+    #                 loc = MDP10.Cloc
+    #             elif x == 6:
+    #                 loc = MDP10.Wloc
+    #             elif x == 7:
+    #                 loc = MDP10.Mloc
+    #             elif x == 8:
+    #                 loc = MDP10.Ploc
+    #             return loc
+    #         params_10 = {
+    #             'gridType': 'hard',
+    #             'rows': 10,
+    #             'cols': 10,
+    #             'passenger': depot(depot_arr[MDP10.num_depots - 1]),
+    #             'dest': depot(depot_arr[i]),
+    #             'taxi': (random.randrange(0, MDP10.rows), random.randrange(0, MDP10.cols))
+    #         }
+    #         dest_arr.append(depot(depot_arr[i]))
+    #         Q_q_decay_10, rewards_Q_decay_10 = q_learning(
+    #             params_10, 10000, 0.25, 0.99, 0.1, True)
+    #         rewards_10.append(rewards_Q_decay_10)
+    #         MDP_temp = MarkovDecisionProblem(params=params_10)
+    #         # reward = 0
+    #         # for i in range(50):
+    #         #     reward += evaluate_policy(Q_q_decay_10, MDP_temp, 0.99)
+    #         # rewards_arr.append(reward/50)
 
-    np.random.shuffle(depot_arr)
-    reward = 0.0
-    rewards_10 = []
-    dest_arr = []
-    for i in range(5):
-        def depot(x):
-            if x == 1:
-                loc = MDP10.Rloc
-            elif x == 2:
-                loc = MDP10.Gloc
-            elif x == 3:
-                loc = MDP10.Yloc
-            elif x == 4:
-                loc = MDP10.Bloc
-            elif x == 5:
-                loc = MDP10.Cloc
-            elif x == 6:
-                loc = MDP10.Wloc
-            elif x == 7:
-                loc = MDP10.Mloc
-            elif x == 8:
-                loc = MDP10.Ploc
-            return loc
-        params_10 = {
-            'gridType': 'hard',
-            'rows': 10,
-            'cols': 10,
-            'passenger': depot(depot_arr[MDP10.num_depots - 1]),
-            'dest': depot(depot_arr[i]),
-            'taxi': (random.randrange(0, MDP10.rows), random.randrange(0, MDP10.cols))
-        }
-        dest_arr.append(depot(depot_arr[i]))
-        Q_q_decay_10, rewards_Q_decay_10 = q_learning(
-            params_10, 10000, 0.25, 0.99, 0.1, True)
-        rewards_10.append(rewards_Q_decay_10)
-        MDP_temp = MarkovDecisionProblem(params=params_10)
-        reward += evaluate_policy(Q_q_decay_10, MDP_temp, 0.99)
-    print(f"Average reward for 5 instances: {reward/5}")
-    make_plot_5(rewards_10, dest_arr)
+    #     make_plot_5(rewards_10, dest_arr)
+    # B5()
+
+    # for i in range(5):
+    #     print()
+    #     simulator(Q_q_decay, MDP, 0.99)
+
     # value_iteration(MDP, value_iter_params)
