@@ -1062,7 +1062,7 @@ def make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay):
     x, y = zip(*rewards_sarsa_decay)
     plt.plot(x, y, label='SARSA with decaying exploration')
     plt.legend()
-    plt.savefig('plot_B2.jpg')
+    plt.savefig('output/plot_B2.jpg')
     print(rewards_Q[-1])
     print(rewards_Q_decay[-1])
     print(rewards_sarsa[-1])
@@ -1081,7 +1081,7 @@ def make_plot_5(rewards, dest_arr):
             x, y, label="dest=("+str(dest_arr[i][0]) + "," + str(dest_arr[i][1])+")")
         print(dest_arr[i], rewards[i][-1])
     plt.legend()
-    plt.savefig('plot_B5.jpg')
+    plt.savefig('output/plot_B5.jpg')
     plt.show()
 
 
@@ -1094,7 +1094,7 @@ def make_plot_3_eps(epsilons, rewards):
         x, y = zip(*rewards[i])
         plt.plot(x, y, label='epsilon='+str(epsilons[i]))
     plt.legend()
-    plt.savefig('plot_B4e.jpg')
+    plt.savefig('output/plot_B4e.jpg')
     plt.show()
 
 
@@ -1107,7 +1107,7 @@ def make_plot_3_alpha(alphas, rewards):
         x, y = zip(*rewards[i])
         plt.plot(x, y, label='alpha='+str(alphas[i]))
     plt.legend()
-    plt.savefig('plot_B4a.jpg')
+    plt.savefig('output/plot_B4a.jpg')
     plt.show()
 
 if __name__ == '__main__':
@@ -1125,7 +1125,6 @@ if __name__ == '__main__':
         'rows': 10,
         'cols': 10
     }
-
     value_iter_params = {
         'discount': 0.9,
         'epsilon': 1e-6,
