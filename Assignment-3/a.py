@@ -351,7 +351,7 @@ def discount_vs_iteration(MDP_params, params):
         discount_list[discount] = value_iteration(MDP_params, params)
     
     plt.figure(figsize=(10, 6))
-    plt.title('Discount vs Convergence',fontsize=12)
+    plt.title('Max-norm vs Iterations (varying discount)',fontsize=12)
     plt.xlabel('Iterations',fontsize=12)
     plt.ylabel('Max-norm',fontsize=12)
     
@@ -361,7 +361,7 @@ def discount_vs_iteration(MDP_params, params):
         plt.plot(x, discount_list[discount], label='discount='+str(discount))
 
     plt.legend()
-    plt.savefig('output/discount_vs_convergence.jpg')
+    plt.savefig('output/max_norm_vs_iterations.jpg')
     plt.show()
     
 def value_iter_parta(MDP_params, params):
@@ -573,7 +573,11 @@ def policy_iteration_linear_algebra(MDP_params, params, plotting=False, V_opt=No
         for tr in range(MDP.rows):
             for tc in range(MDP.cols):
                 for cr in range(MDP.rows):
-                    for cc in range(MDP.cols):
+                    for cc in range(MDP.cols):                        
+                        if not MDP.grid[ps][tr][tc][cr][cc]:
+                            continue
+                        # if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
+                        #     continue
                         # MDP.policy[ps][tr][tc][cr][cc] = MDP.possibleActions[random.randrange(6)]
                         MDP.policy[ps][tr][tc][cr][cc] = 'N'
                         val = (ps, tr, tc, cr, cc)
@@ -595,30 +599,32 @@ def policy_iteration_linear_algebra(MDP_params, params, plotting=False, V_opt=No
             for tr in range(MDP.rows):
                 for tc in range(MDP.cols):
                     for cr in range(MDP.rows):
-                        for cc in range(MDP.cols):
-                            cnt+=1
+                        for cc in range(MDP.cols):                            
                             if not MDP.grid[ps][tr][tc][cr][cc]:
                                 continue
-                            if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
-                                continue              
+                            cnt+=1
+                            # if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
+                                # continue
                             
                             temp = np.zeros(idx)
                             temp[state_encoder[(ps,tr,tc,cr,cc)]] += 1.0
                             # temp[cnt] += 1.0
                             const = 0.0
 
-                            for s in MDP.grid[ps][tr][tc][cr][cc].transitions[MDP.policy[ps][tr][tc][cr][cc]]:
-                                if s['p'] > 0:
-                                    state = s['state']
-                                    temp[state_encoder[state]] += (-s['p']*params['discount'])
-                                    const += s['p']*s['r']
-                            
+                            if MDP.grid[ps][tr][tc][cr][cc].transitions != {}:
+                                for s in MDP.grid[ps][tr][tc][cr][cc].transitions[MDP.policy[ps][tr][tc][cr][cc]]:
+                                    if s['p'] > 0:
+                                        state = s['state']
+                                        temp[state_encoder[state]] += (-s['p']*params['discount'])
+                                        const += s['p']*s['r']
+                                
                             # temp[state_encoder[(ps,tr,tc,cr,cc)]] 
                             
                             A[cnt,:] = temp
                             B[cnt] = const
                             
-        C = np.dot(np.linalg.pinv(A),B)
+        # C = np.dot(np.linalg.pinv(A),B)
+        C = np.linalg.solve(A,B)
         
         max_norm = -inf
         
@@ -654,7 +660,7 @@ def policy_iteration_linear_algebra(MDP_params, params, plotting=False, V_opt=No
         
         print("Iteration:{}, Delta:{}".format(iteration, delta))
 
-        if plotting == True and iteration == 10:
+        if plotting == True and iteration >= 10 and (converged or delta <= params['discountedEpsilon']):
             break
         elif plotting == False and (delta <= params['discountedEpsilon'] or converged):
             break
@@ -694,15 +700,11 @@ def policy_loss(MDP_params, params):
     for discount in discount_list:
         params["discount"] = discount
         V_opt = policy_iteration_iterative(MDP_params, params, plotting=True)
-        discount_list[discount] = np.asarray(policy_iteration_iterative(MDP_params, params, plotting=True, V_opt=V_opt))
-        
-        # V_opt = policy_iteration_linear_algebra(MDP_params, params, plotting=True)
-        # discount_list[discount] = np.asarray(policy_iteration_linear_algebra(MDP_params, params, plotting=True, V_opt=V_opt))
-        
+        discount_list[discount] = np.asarray(policy_iteration_iterative(MDP_params, params, plotting=True, V_opt=V_opt))        
         discount_list[discount] = discount_list[discount] / max(discount_list[discount])
     
     plt.figure(figsize=(10, 6))
-    plt.title('Policy Loss vs Convergence')
+    plt.title('Policy Loss vs Iterations')
     plt.xlabel('Iterations')
     plt.ylabel('Policy Loss')
     
@@ -712,11 +714,32 @@ def policy_loss(MDP_params, params):
         plt.plot(x, discount_list[discount], label='discount='+str(discount))
         
     plt.legend()
-    plt.savefig('output/policy_loss.jpg')
+    plt.savefig('output/policy_loss_iterative.jpg')
     plt.show()
     
-    # policy_loss_plot(data)
-
+    discount_list = {0.01:[], 0.1:[], 0.5:[], 0.8:[], 0.99:[]}
+    for discount in discount_list:
+        params["discount"] = discount
+        V_opt = policy_iteration_linear_algebra(MDP_params, params, plotting=True)
+        discount_list[discount] = np.asarray(policy_iteration_linear_algebra(MDP_params, params, plotting=True, V_opt=V_opt))
+        
+                
+        discount_list[discount] = discount_list[discount] / max(discount_list[discount])
+    
+    plt.figure(figsize=(10, 6))
+    plt.title('Policy Loss vs Iterations')
+    plt.xlabel('Iterations')
+    plt.ylabel('Policy Loss')
+    
+    for discount in discount_list:
+        if len(discount_list[discount]) == 0: continue
+        x = np.arange(1,len(discount_list[discount])+1)
+        plt.plot(x, discount_list[discount], label='discount='+str(discount))
+        
+    plt.legend()
+    plt.savefig('output/policy_loss_linear_algebra.jpg')
+    plt.show()
+    
 def evaluate_policy(Q, MDP, discount):
     passenger = MDP.dest
     while(MDP.dest == passenger):
@@ -1059,7 +1082,7 @@ def make_plot_5(rewards, dest_arr):
         print(dest_arr[i], rewards[i][-1])
     plt.legend()
     plt.savefig('plot_B5.jpg')
-    # plt.show()
+    plt.show()
 
 
 def make_plot_3_eps(epsilons, rewards):
@@ -1109,16 +1132,20 @@ if __name__ == '__main__':
         'success_prob': 0.85
     }
     
-    # value_iteration(params, value_iter_params, simulate_policy=True, maxStep=150, printOpt=True)
-    # value_iter_parta(params, value_iter_params)
-    # value_iter_partb(params, value_iter_params)
-    value_iter_partc(params, value_iter_params, True)
+    # Value Iteration with plot (max-norm vs iteration)
+    value_iter_parta(params_easy, value_iter_params)
     
-    # policy_iteration_iterative(params, value_iter_params)
-    # policy_iteration_linear_algebra(params, value_iter_params)
-    # policy_loss(params, value_iter_params)
+    # Loss vs Iteration (varying discount)
+    value_iter_partb(params_easy, value_iter_params)
     
-    # q_learning(params, 2000, 0.25, 0.99, 0.1, False)
+    # State Action Seq for gamma=0.1, gamma=0.99
+    value_iter_partc(params_easy, value_iter_params, True)    
+
+    # policy_iteration_iterative(params_easy, value_iter_params)
+    # policy_iteration_linear_algebra(params_easy, value_iter_params)
+    
+    # Policy Loss (with linear algebra, varying discount)
+    policy_loss(params_easy, value_iter_params)
 
     MDP = MarkovDecisionProblem(params=params_easy)
     MDP10 = MarkovDecisionProblem(params=params_hard)
@@ -1128,70 +1155,68 @@ if __name__ == '__main__':
     Q_sarsa, rewards_sarsa = sarsa(params_easy, 2000, 0.25, 0.99, 0.1, False)
     Q_sarsa_decay, rewards_sarsa_decay = sarsa(
         params_easy, 2000, 0.25, 0.99, 0.1, True)
-    # eps_vals = [0, 0.05, 0.1, 0.5, 0.9]
-    # alpha_vals = [0.1, 0.2, 0.3, 0.4, 0.5]
-    # rewards_eps = []
-    # rewards_alpha = []
-    # for eps in eps_vals:
-    #     rewards_eps.append(q_learning(
-    #         params_easy, 2000, 0.1, 0.99, eps, False)[1])
+    eps_vals = [0, 0.05, 0.1, 0.5, 0.9]
+    alpha_vals = [0.1, 0.2, 0.3, 0.4, 0.5]
+    rewards_eps = []
+    rewards_alpha = []
+    for eps in eps_vals:
+        rewards_eps.append(q_learning(
+            params_easy, 2000, 0.1, 0.99, eps, False)[1])
 
-    # for alpha in alpha_vals:
-    #     rewards_alpha.append(q_learning(
-    #         params_easy, 2000, alpha, 0.99, 0.1, False)[1])
+    for alpha in alpha_vals:
+        rewards_alpha.append(q_learning(
+            params_easy, 2000, alpha, 0.99, 0.1, False)[1])
 
-    # make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay)
-    # make_plot_3_eps(eps_vals, rewards_eps)
-    # make_plot_3_alpha(alpha_vals, rewards_alpha)
+    make_plot_1(rewards_Q, rewards_Q_decay, rewards_sarsa, rewards_sarsa_decay)
+    make_plot_3_eps(eps_vals, rewards_eps)
+    make_plot_3_alpha(alpha_vals, rewards_alpha)
 
-    # def B5():
-    #     depot_arr = [1, 2, 3, 4, 5, 6, 7, 8]
-    #     np.random.shuffle(depot_arr)
-    #     reward = 0.0
-    #     rewards_10 = []
-    #     dest_arr = []
-    #     for i in range(5):
-    #         def depot(x):
-    #             if x == 1:
-    #                 loc = MDP10.Rloc
-    #             elif x == 2:
-    #                 loc = MDP10.Gloc
-    #             elif x == 3:
-    #                 loc = MDP10.Yloc
-    #             elif x == 4:
-    #                 loc = MDP10.Bloc
-    #             elif x == 5:
-    #                 loc = MDP10.Cloc
-    #             elif x == 6:
-    #                 loc = MDP10.Wloc
-    #             elif x == 7:
-    #                 loc = MDP10.Mloc
-    #             elif x == 8:
-    #                 loc = MDP10.Ploc
-    #             return loc
-    #         params_10 = {
-    #             'gridType': 'hard',
-    #             'rows': 10,
-    #             'cols': 10,
-    #             'passenger': depot(depot_arr[MDP10.num_depots - 1]),
-    #             'dest': depot(depot_arr[i]),
-    #             'taxi': (random.randrange(0, MDP10.rows), random.randrange(0, MDP10.cols))
-    #         }
-    #         dest_arr.append(depot(depot_arr[i]))
-    #         Q_q_decay_10, rewards_Q_decay_10 = q_learning(
-    #             params_10, 10000, 0.25, 0.99, 0.1, True)
-    #         rewards_10.append(rewards_Q_decay_10)
-    #         MDP_temp = MarkovDecisionProblem(params=params_10)
-    #         # reward = 0
-    #         # for i in range(50):
-    #         #     reward += evaluate_policy(Q_q_decay_10, MDP_temp, 0.99)
-    #         # rewards_arr.append(reward/50)
+    def B5():
+        depot_arr = [1, 2, 3, 4, 5, 6, 7, 8]
+        np.random.shuffle(depot_arr)
+        reward = 0.0
+        rewards_10 = []
+        dest_arr = []
+        for i in range(5):
+            def depot(x):
+                if x == 1:
+                    loc = MDP10.Rloc
+                elif x == 2:
+                    loc = MDP10.Gloc
+                elif x == 3:
+                    loc = MDP10.Yloc
+                elif x == 4:
+                    loc = MDP10.Bloc
+                elif x == 5:
+                    loc = MDP10.Cloc
+                elif x == 6:
+                    loc = MDP10.Wloc
+                elif x == 7:
+                    loc = MDP10.Mloc
+                elif x == 8:
+                    loc = MDP10.Ploc
+                return loc
+            params_10 = {
+                'gridType': 'hard',
+                'rows': 10,
+                'cols': 10,
+                'passenger': depot(depot_arr[MDP10.num_depots - 1]),
+                'dest': depot(depot_arr[i]),
+                'taxi': (random.randrange(0, MDP10.rows), random.randrange(0, MDP10.cols))
+            }
+            dest_arr.append(depot(depot_arr[i]))
+            Q_q_decay_10, rewards_Q_decay_10 = q_learning(
+                params_10, 10000, 0.25, 0.99, 0.1, True)
+            rewards_10.append(rewards_Q_decay_10)
+            MDP_temp = MarkovDecisionProblem(params=params_10)
+            # reward = 0
+            # for i in range(50):
+            #     reward += evaluate_policy(Q_q_decay_10, MDP_temp, 0.99)
+            # rewards_arr.append(reward/50)
 
-    #     make_plot_5(rewards_10, dest_arr)
-    # B5()
+        make_plot_5(rewards_10, dest_arr)
+    B5()
 
-    # for i in range(5):
-    #     print()
-    #     simulator(Q_q_decay, MDP, 0.99)
-
-    # value_iteration(MDP, value_iter_params)
+    for i in range(5):
+        print()
+        simulator(Q_q_decay, MDP, 0.99)    
