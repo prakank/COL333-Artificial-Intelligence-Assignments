@@ -205,7 +205,6 @@ class MarkovDecisionProblem:
                 return trans
         return None
 
-
 def utilityValue(MDP, params, ps, tr, tc, cr, cc, policy=False):
     if policy == False:
         val = -float('inf')
@@ -231,15 +230,16 @@ def Q_Value(MDP, params, ps, tr, tc, cr, cc, action):
                                 MDP.V[nps][ntr][ntc][ncr][ncc]))    
     return q
 
-def value_iteration(MDP_params, params, simulate_policy=False):
+def value_iteration(MDP_params, params, simulate_policy=False, maxStep=23, printOpt=False):
     
     MDP = MarkovDecisionProblem(MDP_params)
-    data = []
+    data = []    
     
     iteration = 0
     params['discountedEpsilon'] = params['epsilon'] * \
         (1-params['discount'])/params['discount']
 
+    print('\n\n')
     while True:
         iteration += 1
         delta = 0.0
@@ -281,8 +281,12 @@ def value_iteration(MDP_params, params, simulate_policy=False):
     step   = 0
     
     state_action_seq = [(0,tr, tc, cr, cc)]
+    
+    if printOpt == True:
+        line_new = '{:>14}  {:>6}  {:>14}  {:>10}'.format('Current State', 'Action', 'Next State', 'Reward')
+        print(line_new)
 
-    while simulate_policy == True and not (tr == MDP.dest[0] and tc == MDP.dest[1] and picked == False and cr == tr and cc == tc) and step <= 20:
+    while simulate_policy == True and not (tr == MDP.dest[0] and tc == MDP.dest[1] and picked == False and cr == tr and cc == tc) and step <= maxStep:
         if not picked:
             action = MDP.policy[0][tr][tc][cr][cc]
         else:
@@ -293,14 +297,29 @@ def value_iteration(MDP_params, params, simulate_policy=False):
         ret = MDP.simulate(picked, tr, tc, cr, cc, action)
         (picked, tr, tc, cr, cc) = ret["state"]
         
+        state_action_seq.append(ret['r'])
+        
         state_action_seq.append((picked, tr, tc, cr, cc))
         
         reward = ret["r"]
         step += 1
-        # print(action, ret)
-        # time.sleep(0.1)
+        if printOpt == True:
+            action_print = ''
+            if str(action) == 'N': action_print = 'North'
+            elif str(action) == 'S': action_print = 'South'
+            elif str(action) == 'E': action_print = 'East'
+            elif str(action) == 'W': action_print = 'West'
+            elif str(action) == 'U': action_print = 'Pickup'
+            elif str(action) == 'D': action_print = 'Putdown'
+            print('{:>14}  {:>6}  {:>12}  {:>10}'.
+                  format(str(state_action_seq[-4]),action_print,str(state_action_seq[-1]), 
+                         str(state_action_seq[-2])))
+            # print(action, ret)
+            time.sleep(0.04)
     
     if simulate_policy == False:
+        return data
+    elif simulate_policy == True and maxStep > 21 and printOpt == True:
         return data
 
     return state_action_seq
@@ -312,9 +331,9 @@ def discount_vs_iteration(MDP_params, params):
         discount_list[discount] = value_iteration(MDP_params, params)
     
     plt.figure(figsize=(10, 6))
-    plt.title('Discount vs Convergence')
-    plt.xlabel('Iterations')
-    plt.ylabel('Max-norm')
+    plt.title('Discount vs Convergence',fontsize=12)
+    plt.xlabel('Iterations',fontsize=12)
+    plt.ylabel('Max-norm',fontsize=12)
     
     for discount in discount_list:
         if discount_list[discount] == None or len(discount_list[discount]) == 0: continue
@@ -324,16 +343,86 @@ def discount_vs_iteration(MDP_params, params):
     plt.legend()
     plt.savefig('output/discount_vs_convergence.jpg')
     plt.show()
+    
+def value_iter_parta(MDP_params, params):
+    data = value_iteration(MDP_params, params, simulate_policy=True, maxStep=150, printOpt=True)
+    plt.figure(figsize=(10, 6))
+    plt.title('Value Iteration (discount:{}, epsilon:{})'.format(params['discount'], params['epsilon']),fontsize=12)
+    plt.xlabel('Iterations',fontsize=12)
+    plt.ylabel('Max-norm',fontsize=12)
+    
+    plt.plot(np.arange(1,len(data)+1), data)
+    plt.savefig('output/value_iteration_parta.jpg')
+    plt.show()
 
-def value_iter_partc(MDP_params, params):
+def value_iter_partb(MDP_params, params):
+    discount_vs_iteration(MDP_params, params)
+
+def value_iter_partc(MDP_params, params, multipleRun=False):
     discount_list = {0.1:[], 0.99:[]}
     
-    for discount in discount_list:
-        params[discount] = discount
-        discount_list[discount] = value_iteration(MDP_params, params, simulate_policy=True)
-    
-    print(discount_list[0.1])
-    print(discount_list[0.99])
+    if multipleRun == False:
+        for discount in discount_list:
+            params['discount'] = discount
+            discount_list[discount] = value_iteration(MDP_params, params, simulate_policy=True)
+        
+        for discount in discount_list:
+            print('\nTaxi:({},{}), Passenger:({},{}), Dest:({},{}), Discount={}'.
+                    format(MDP_params['taxi'][0],MDP_params['taxi'][1],MDP_params['passenger'][0],MDP_params['passenger'][1],
+                           MDP_params['dest'][0],MDP_params['dest'][1],discount))
+            line_new = '{:>14}  {:>6}  {:>14}  {:>10}'.format('Current State', 'Action', 'Next State', 'Reward')
+            print(line_new)
+            for i in range(0,len(discount_list[discount])-3,3):
+                action = ''
+                if str(discount_list[discount][i+1]) == 'N': action = 'North'
+                elif str(discount_list[discount][i+1]) == 'S': action = 'South'
+                elif str(discount_list[discount][i+1]) == 'E': action = 'East'
+                elif str(discount_list[discount][i+1]) == 'W': action = 'West'
+                elif str(discount_list[discount][i+1]) == 'U': action = 'Pickup'
+                elif str(discount_list[discount][i+1]) == 'D': action = 'Putdown'
+                
+                print('{:>14}  {:>6}  {:>12}  {:>10}'.format(str(discount_list[discount][i]),action,str(discount_list[discount][i+3]), str(discount_list[discount][i+2])))
+            print()
+    else:
+        start_states = {(0,0):{}, (0,4):{}, (4,3):{}}
+        
+        for i in start_states:
+            discount_list = {0.1:[], 0.99:[]}
+            MDP_params['passenger'] = i
+            MDP_params['taxi'] = (random.randrange(5), random.randrange(5))
+            
+            for discount in discount_list:
+                params['discount'] = discount
+                discount_list[discount] = value_iteration(MDP_params, params, simulate_policy=True)
+            
+            start_states[i]['list'] = discount_list
+            start_states[i]['taxi'] = MDP_params['taxi']
+            start_states[i]['passenger'] = MDP_params['passenger']
+            start_states[i]['dest'] = MDP_params['dest']
+            
+        for i in start_states:
+            discount_list = start_states[i]['list']
+            MDP_params['taxi'] = start_states[i]['taxi']
+            MDP_params['passenger'] = start_states[i]['passenger']
+            MDP_params['dest'] = start_states[i]['dest']
+            
+            for discount in discount_list:
+                print('\nTaxi:({},{}), Passenger:({},{}), Dest:({},{}), Discount={}'.
+                        format(MDP_params['taxi'][0],MDP_params['taxi'][1],MDP_params['passenger'][0],MDP_params['passenger'][1],
+                            MDP_params['dest'][0],MDP_params['dest'][1],discount))
+                line_new = '{:>14}  {:>6}  {:>14}  {:>10}'.format('Current State', 'Action', 'Next State', 'Reward')
+                print(line_new)
+                for i in range(0,len(discount_list[discount])-3,3):
+                    action = ''
+                    if str(discount_list[discount][i+1]) == 'N': action = 'North'
+                    elif str(discount_list[discount][i+1]) == 'S': action = 'South'
+                    elif str(discount_list[discount][i+1]) == 'E': action = 'East'
+                    elif str(discount_list[discount][i+1]) == 'W': action = 'West'
+                    elif str(discount_list[discount][i+1]) == 'U': action = 'Pickup'
+                    elif str(discount_list[discount][i+1]) == 'D': action = 'Putdown'
+                    
+                    print('{:>14}  {:>6}  {:>12}  {:>10}'.format(str(discount_list[discount][i]),action,str(discount_list[discount][i+3]), str(discount_list[discount][i+2])))
+            print('\n\n')
 
 def new_policy(MDP, params, ps, tr, tc, cr, cc):
     _, action = utilityValue(MDP, params, ps, tr, tc, cr, cc)
@@ -361,7 +450,6 @@ def policy_iteration_iterative(MDP_params, params, plotting=False, V_opt=None):
                         if MDP.grid[ps][tr][tc][cr][cc].transitions == {}:
                             continue
                         MDP.policy[ps][tr][tc][cr][cc] = MDP.possibleActions[random.randrange(6)]
-    
     while True:
         
         # Policy Evaluation        
@@ -725,9 +813,10 @@ if __name__ == '__main__':
         'success_prob': 0.85
     }
     
-    # value_iteration(params, value_iter_params)
-    discount_vs_iteration(params, value_iter_params)
-    # value_iter_partc(params, value_iter_params)
+    # value_iteration(params, value_iter_params, simulate_policy=True, maxStep=150, printOpt=True)
+    # value_iter_parta(params, value_iter_params)
+    # value_iter_partb(params, value_iter_params)
+    value_iter_partc(params, value_iter_params, True)
     
     # policy_iteration_iterative(params, value_iter_params)
     # policy_iteration_linear_algebra(params, value_iter_params)
